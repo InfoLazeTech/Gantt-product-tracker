@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchRecipe } from "../redux/features/recipeSlice";
+import { FaEdit, FaTrash } from "react-icons/fa";
 
 export default function Recipe() {
   const dispatch = useDispatch();
@@ -10,6 +11,7 @@ export default function Recipe() {
   useEffect(() => {
     dispatch(fetchRecipe());
   }, [dispatch]);
+
 
   console.log(recipe);
 
@@ -22,7 +24,7 @@ export default function Recipe() {
           className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg shadow"
           onClick={() => setShowModal(true)}
         >
-          + Add
+          + Add Recipe
         </button>
       </div>
 
@@ -36,6 +38,7 @@ export default function Recipe() {
               <th className="px-4 py-3 border-b">Name</th>
               <th className="px-4 py-3 border-b">Description</th>
               <th className="px-4 py-3 border-b">Processes</th>
+              <th className="px-4 py-3 border-b">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -47,6 +50,22 @@ export default function Recipe() {
                   <td className="px-4 py-3 border-b">{item.name}</td>
                   <td className="px-4 py-3 border-b">{item.description}</td>
                   <td className="px-4 py-3 border-b">{item.processes.map((process) => process.name).join(', ')}</td>
+                  <td className="px-4 py-3 border-b">
+                    <button
+                      className="rounded-full p-2 bg-blue-100 hover:bg-blue-200 transition-colors mr-2"
+                      title="Edit"
+
+                    >
+                      <FaEdit className="text-blue-600" />
+                    </button>
+                    <button
+                      className="rounded-full p-2 bg-red-100 hover:bg-red-200 transition-colors"
+                      title="Delete"
+
+                    >
+                      <FaTrash className="text-red-600" />
+                    </button>
+                  </td>
                 </tr>
               ))
             ) : (
