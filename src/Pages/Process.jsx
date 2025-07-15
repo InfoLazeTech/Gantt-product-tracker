@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addProcess, fetchProcess } from '../redux/features/processSlice';
 import { toast } from 'react-toastify';
-import { FaTrash,FaEdit } from 'react-icons/fa';
 
 export default function Process() {
   const dispatch = useDispatch();
@@ -62,7 +61,6 @@ export default function Process() {
               <th className="px-4 py-3 border-b">Name</th>
               <th className="px-4 py-3 border-b">Description</th>
               <th className="px-4 py-3 border-b">Days</th>
-              <th className="px-4 py-3 border-b">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -74,22 +72,6 @@ export default function Process() {
                   <td className="px-4 py-3 border-b">{item.name}</td>
                   <td className="px-4 py-3 border-b">{item.description}</td>
                   <td className="px-4 py-3 border-b">{item.day || '-'}</td>
-                  <td className="px-4 py-3 border-b">
-                    <button
-                      className="rounded-full p-2 bg-blue-100 hover:bg-blue-200 transition-colors mr-2"
-                      title="Edit"
-                     
-                    >
-                      <FaEdit className="text-blue-600" />
-                    </button>
-                    <button
-                      className="rounded-full p-2 bg-red-100 hover:bg-red-200 transition-colors"
-                      title="Delete"
-                     
-                    >
-                      <FaTrash className="text-red-600" />
-                    </button>
-                  </td>
                 </tr>
               ))
             ) : (
