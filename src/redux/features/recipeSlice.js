@@ -13,6 +13,17 @@ export const fetchRecipe = createAsyncThunk('recipe/fetchRecipe', async () => {
     }
 });
 
+export const addRecipe = createAsyncThunk('recipe/addRecipe', async (recipeData) => {
+    try {
+        const response = await axiosConfig.post('/recipes', recipeData);
+        return response.data;
+    } catch (error) {
+        throw (
+            error.response.data.message || 'Something went wrong'
+        )
+    }
+});
+
 const recipeSlice = createSlice({
     name: 'recipe',
     initialState: {
@@ -34,6 +45,19 @@ const recipeSlice = createSlice({
                 toast.success(state.message);
             })
             .addCase(fetchRecipe.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+                toast.error(state.error);
+            })
+            .addCase(addRecipe.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(addRecipe.fulfilled, (state, action) => {
+                state.loading = false;
+                state.message = action.payload.message;
+                toast.success(state.message);
+            })
+            .addCase(addRecipe.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
                 toast.error(state.error);
