@@ -1,43 +1,64 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { addProcess, fetchProcess } from '../redux/features/processSlice';
-import { toast } from 'react-toastify';
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  addProcess,
+  fetchProcess,
+  updateProcess,
+} from "../redux/features/processSlice";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { FaEdit, FaTrash } from "react-icons/fa";
 
 export default function Process() {
   const dispatch = useDispatch();
-  const { process, loading, error, message } = useSelector((state) => state.process);
+  const { process } = useSelector(
+    (state) => state.process
+  );
   const [showModal, setShowModal] = useState(false);
-  const [processName, setProcessName] = useState('');
-  const [description, setDescription] = useState('');
-  const [days, setDays] = useState('');
+  const [processName, setProcessName] = useState("");
+  const [description, setDescription] = useState("");
+  const [days, setDays] = useState(""); // initialize as empty string
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editId, setEditId] = useState(null);
 
   useEffect(() => {
     dispatch(fetchProcess());
   }, [dispatch]);
 
-  console.log(process); 
+  console.log(process);
 
-  const handleAddProcess = async () => {
-    const resultAction = await dispatch(addProcess({
-      name: processName,
-      description: description,
-      day: days
-    }));
+  const resetForm = () => {
+    setShowModal(false);
+    setProcessName("");
+    setDescription("");
+    setDays("");
+    setIsEditMode(false);
+    setEditId(null);
+  };
 
-    // Check if the action was fulfilled (success)
-    if (addProcess.fulfilled.match(resultAction)) {
-      dispatch(fetchProcess());
-      setShowModal(false);
-      setProcessName('');
-      setDescription('');
-      setDays('');
-      toast.success('Process created successfully!');
-    } else {
-      // Show error toast with backend error message if available
-      const errorMsg = resultAction.error?.message || 'Failed to create process';
-      toast.error(errorMsg);
+ const handleSubmitProcess = () => {
+    if (!processName || !description || !days) {
+      toast.error("All fields are required");
+      return;
     }
-  };  
+
+    const processData = {
+      name: processName,
+      description,
+      day: days,
+    };
+
+    if (isEditMode && editId) {
+      dispatch(updateProcess({ id: editId, processData }))
+        .then(() => resetForm())
+        .catch((error) => console.error("Update failed:", error));
+    } else {
+      dispatch(addProcess(processData))
+        .then(() => resetForm())
+        .catch((error) => console.error("Add failed:", error));
+    }
+  }
+  
 
   return (
     <div className="space-y-8">
@@ -47,7 +68,7 @@ export default function Process() {
           className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg shadow"
           onClick={() => setShowModal(true)}
         >
-          + Add
+          + Add Recipe
         </button>
       </div>
 
@@ -61,17 +82,45 @@ export default function Process() {
               <th className="px-4 py-3 border-b">Name</th>
               <th className="px-4 py-3 border-b">Description</th>
               <th className="px-4 py-3 border-b">Days</th>
+              <th className="px-4 py-3 border-b">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {Array.isArray(process.processes) && process.processes.length > 0 ? (
+            {Array.isArray(process.processes) &&
+            process.processes.length > 0 ? (
               process.processes.map((item, idx) => (
-                <tr key={item._id || idx} className="hover:bg-gray-50 text-gray-800">
+                <tr
+                  key={item._id || idx}
+                  className="hover:bg-gray-50 text-gray-800"
+                >
                   <td className="px-4 py-3 border-b">{idx + 1}</td>
-                  <td className="px-4 py-3 border-b">{item.processId || '-'}</td>
+                  <td className="px-4 py-3 border-b">
+                    {item.processId || "-"}
+                  </td>
                   <td className="px-4 py-3 border-b">{item.name}</td>
                   <td className="px-4 py-3 border-b">{item.description}</td>
-                  <td className="px-4 py-3 border-b">{item.day || '-'}</td>
+                  <td className="px-4 py-3 border-b">{item.day || "-"}</td>
+                  <td className="px-4 py-3 border-b">
+                    <button
+                      className="rounded-full p-2 bg-blue-100 hover:bg-blue-200 transition-colors mr-2"
+                      onClick={() => {
+                        setProcessName(item.name);
+                        setDescription(item.description);
+                        setDays(item.day);
+                        setEditId(item._id);
+                        setIsEditMode(true);
+                        setShowModal(true);
+                      }}
+                    >
+                      <FaEdit className="text-blue-600" />
+                    </button>
+                    <button
+                      className="rounded-full p-2 bg-red-100 hover:bg-red-200 transition-colors"
+                      onClick={() => console.log("Delete", item._id)}
+                    >
+                      <FaTrash className="text-red-600" />
+                    </button>
+                  </td>
                 </tr>
               ))
             ) : (
@@ -90,7 +139,10 @@ export default function Process() {
         <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
           <div className="bg-white p-8 rounded-xl w-full max-w-2xl shadow-lg space-y-6 relative">
             <div className="flex justify-between items-center border-b pb-3">
-              <h3 className="text-xl font-semibold text-gray-700">Add New Process</h3>
+              <h3 className="text-xl font-semibold text-gray-700">
+                {isEditMode ? "Edit Process" : "Add New Process"}
+              </h3>
+
               <button
                 onClick={() => setShowModal(false)}
                 className="text-gray-400 hover:text-red-600 text-2xl leading-none font-bold"
@@ -132,9 +184,9 @@ export default function Process() {
               </button>
               <button
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
-                onClick={handleAddProcess}
+                onClick={handleSubmitProcess}
               >
-                Save
+                {isEditMode ? "Update" : "Save"}
               </button>
             </div>
           </div>
