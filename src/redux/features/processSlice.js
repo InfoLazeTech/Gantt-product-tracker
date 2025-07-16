@@ -30,17 +30,32 @@ export const addProcess = createAsyncThunk(
 
 export const updateProcess = createAsyncThunk(
   "process/updateProcess",
-  async ({ id, processData }) => {
+  async ({ id, updatedProcess }) => {
     try {
-      const response = await axiosConfig.put(`/processes/${id}`, processData);
+      const response = await axiosConfig.put(
+        `/processes/${id}`,
+        updatedProcess
+      );
       return response.data;
     } catch (error) {
-      throw error.response.data.message || "Something went wrong";
+      throw error.response?.data?.message || "Something went wrong";
     }
   }
-  
 );
-
+export const deleteProcess = createAsyncThunk(
+  "process/deleteProcess",
+  async (id, deletedProcess) => {
+    try {
+      const response = await axiosConfig.delete(
+        `/processes/${id}`,
+        deletedProcess
+      );
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.message || "Something went wrong";
+    }
+  }
+);
 
 const processSlice = createSlice({
   name: "process",
@@ -90,6 +105,21 @@ const processSlice = createSlice({
         toast.success(state.message);
       })
       .addCase(updateProcess.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        toast.error(state.error);
+      })
+      // Handle deleteProcess
+
+      .addCase(deleteProcess.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(deleteProcess.fulfilled, (state, action) => {
+        state.loading = false;
+        state.message = action.payload.message;
+        toast.success(state.message);
+      })
+      .addCase(deleteProcess.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
         toast.error(state.error);

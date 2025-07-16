@@ -11,9 +11,7 @@ import { FaEdit, FaTrash } from "react-icons/fa";
 
 export default function Process() {
   const dispatch = useDispatch();
-  const { process } = useSelector(
-    (state) => state.process
-  );
+  const { process } = useSelector((state) => state.process);
   const [showModal, setShowModal] = useState(false);
   const [processName, setProcessName] = useState("");
   const [description, setDescription] = useState("");
@@ -27,38 +25,54 @@ export default function Process() {
 
   console.log(process);
 
-  const resetForm = () => {
-    setShowModal(false);
-    setProcessName("");
-    setDescription("");
-    setDays("");
-    setIsEditMode(false);
-    setEditId(null);
+const resetForm = () => {
+  setShowModal(false);
+  setProcessName("");
+  setDescription("");
+  setDays("");
+  setIsEditMode(false);
+  setEditId(null);
+};
+
+  const handleSubmitProcess = () => {
+  if (!processName || !description || !days) {
+    toast.error("All fields are required");
+    return;
+  }
+
+  const processData = {
+    name: processName,
+    description,
+    day: days,
   };
 
- const handleSubmitProcess = () => {
-    if (!processName || !description || !days) {
-      toast.error("All fields are required");
-      return;
-    }
-
-    const processData = {
-      name: processName,
-      description,
-      day: days,
-    };
-
-    if (isEditMode && editId) {
-      dispatch(updateProcess({ id: editId, processData }))
-        .then(() => resetForm())
-        .catch((error) => console.error("Update failed:", error));
-    } else {
-      dispatch(addProcess(processData))
-        .then(() => resetForm())
-        .catch((error) => console.error("Add failed:", error));
-    }
+  if (isEditMode && editId) {
+    dispatch(updateProcess({ id: editId, updatedProcess: processData }))
+      .unwrap()
+      .then(() => {
+        dispatch(fetchProcess()); // ✅ refresh list after update
+        resetForm();
+        // toast.success("Process updated successfully");
+      })
+      .catch((error) => {
+        console.error("Update failed:", error);
+        toast.error("Update failed");
+      });
+  } else {
+    dispatch(addProcess(processData))
+      .unwrap()
+      .then(() => {
+        dispatch(fetchProcess()); // ✅ refresh list after add
+        resetForm();
+        toast.success("Process added successfully");
+      })
+      .catch((error) => {
+        console.error("Add failed:", error);
+        toast.error("Add failed");
+      });
   }
-  
+};
+
 
   return (
     <div className="space-y-8">
@@ -104,12 +118,16 @@ export default function Process() {
                     <button
                       className="rounded-full p-2 bg-blue-100 hover:bg-blue-200 transition-colors mr-2"
                       onClick={() => {
-                        setProcessName(item.name);
-                        setDescription(item.description);
-                        setDays(item.day);
-                        setEditId(item._id);
+                        setProcessName(item.name ?? "");
+                        setDescription(item.description ?? "");
+                        setDays(item.day?.toString() ?? "");
+                        setEditId(item.processId);
                         setIsEditMode(true);
                         setShowModal(true);
+                        console.log(
+                          "Updating process with ID:",
+                          item.processId
+                        ); // ✅ correct
                       }}
                     >
                       <FaEdit className="text-blue-600" />
@@ -155,21 +173,21 @@ export default function Process() {
               <input
                 type="text"
                 placeholder="Process Name"
-                value={processName}
+                value={processName ?? ""}
                 onChange={(e) => setProcessName(e.target.value)}
                 className="border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
               <input
                 type="text"
                 placeholder="Description"
-                value={description}
+                value={description ?? ""}
                 onChange={(e) => setDescription(e.target.value)}
                 className="border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
               <input
                 type="number"
                 placeholder="Days"
-                value={days}
+                value={days ?? ""}
                 onChange={(e) => setDays(e.target.value)}
                 className="border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
