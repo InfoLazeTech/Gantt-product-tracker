@@ -1,12 +1,16 @@
 import React from "react";
 import { Outlet, NavLink } from "react-router-dom";
 import { FaTools, FaBookOpen, FaFileInvoice } from "react-icons/fa";
+import logo from "../assets/timelineLogo.png"
 
 const SidebarLayout = () => {
   return (
     <div className="flex h-screen flex-col">
       <header className="bg-gray-200 shadow-md p-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-800">Dashboard</h1>
+        <div className="flex">
+          <img src={logo} alt="logo" className="w-10 h-10" />
+          <h1 className="text-xl font-semibold text-gray-800 mt-1.5">TimeLine-Chart</h1>
+        </div>
         <div className="text-sm text-gray-500">Welcome, Admin</div>
       </header>
 
@@ -17,10 +21,9 @@ const SidebarLayout = () => {
             <NavLink
               to="process"
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive
-                    ? "bg-gray-700 text-yellow-400"
-                    : "hover:bg-gray-800 text-white"
+                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isActive
+                  ? "bg-gray-700 text-yellow-400"
+                  : "hover:bg-gray-800 text-white"
                 }`
               }
             >
@@ -31,10 +34,9 @@ const SidebarLayout = () => {
             <NavLink
               to="recipe"
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive
-                    ? "bg-gray-700 text-yellow-400"
-                    : "hover:bg-gray-800 text-white"
+                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isActive
+                  ? "bg-gray-700 text-yellow-400"
+                  : "hover:bg-gray-800 text-white"
                 }`
               }
             >
@@ -45,10 +47,9 @@ const SidebarLayout = () => {
             <NavLink
               to="po-detail"
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive
-                    ? "bg-gray-700 text-yellow-400"
-                    : "hover:bg-gray-800 text-white"
+                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isActive
+                  ? "bg-gray-700 text-yellow-400"
+                  : "hover:bg-gray-800 text-white"
                 }`
               }
             >
