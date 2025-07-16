@@ -24,6 +24,38 @@ export const addRecipe = createAsyncThunk('recipe/addRecipe', async (recipeData)
     }
 });
 
+export const updateRecipe = createAsyncThunk(
+    'recipe/updatedRecipe',
+    async ({ id, updateRecipeData }, { rejectWithValue }) => {
+        try {
+            console.log("🚀 Recipe ID to update:", id); // Should log RECIPE-001 or similar
+
+            const response = await axiosConfig.put(`/recipes/${id}`, updateRecipeData);
+            return response.data;
+        } catch (error) {
+            console.error("❌ Update Error:", error);
+            return rejectWithValue(
+                error.response?.data?.message || "Something went wrong"
+            );
+        }
+    }
+);
+
+export const deleteRecipe = createAsyncThunk(
+    'recipe/deleteRecipe',
+    async ({ id }, { rejectWithValue }) => {
+        try {
+            const response = await axiosConfig.delete(`/recipes/${id}`);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(
+                error.response?.data?.message || "Something went wrong"
+            );
+        }
+    }
+);
+
+
 const recipeSlice = createSlice({
     name: 'recipe',
     initialState: {
@@ -58,6 +90,32 @@ const recipeSlice = createSlice({
                 toast.success(state.message);
             })
             .addCase(addRecipe.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+                toast.error(state.error);
+            })
+            .addCase(updateRecipe.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(updateRecipe.fulfilled, (state, action) => {
+                state.loading = false;
+                state.message = action.payload.message;
+                toast.success(state.message);
+            })
+            .addCase(updateRecipe.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+                toast.error(state.error);
+            })
+            .addCase(deleteRecipe.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(deleteRecipe.fulfilled, (state, action) => {
+                state.loading = false;
+                state.message = action.payload.message;
+                toast.success(state.message);
+            })
+            .addCase(deleteRecipe.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
                 toast.error(state.error);
