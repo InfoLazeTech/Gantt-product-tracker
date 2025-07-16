@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchRecipe, addRecipe, updateRecipe } from "../redux/features/recipeSlice";
+import {
+  fetchRecipe,
+  addRecipe,
+  updateRecipe,
+  deleteRecipe,
+} from "../redux/features/recipeSlice";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { fetchProcess } from "../redux/features/processSlice";
@@ -17,6 +22,8 @@ export default function Recipe() {
   const [selectedProcesses, setSelectedProcesses] = useState([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingRecipeId, setEditingRecipeId] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedProcessId, setSelectedProcessId] = useState(null);
 
   useEffect(() => {
     dispatch(fetchRecipe());
@@ -34,7 +41,9 @@ export default function Recipe() {
   const handleCheckboxChange = (e) => {
     const value = e.target.value;
     setSelectedProcesses((prev) =>
-      prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]
+      prev.includes(value)
+        ? prev.filter((item) => item !== value)
+        : [...prev, value]
     );
   };
 
@@ -61,7 +70,9 @@ export default function Recipe() {
     try {
       let result;
       if (isEditMode) {
-        const selectedRecipe = recipe.recipes.find((r) => r._id === editingRecipeId);
+        const selectedRecipe = recipe.recipes.find(
+          (r) => r._id === editingRecipeId
+        );
         if (!selectedRecipe) {
           toast.error("Could not find recipe to update.");
           return;
@@ -94,6 +105,24 @@ export default function Recipe() {
     }
   };
 
+  const handleDeleteRecipe  = () => {
+    if (!selectedProcessId) return;
+
+    dispatch(deleteRecipe(selectedProcessId))
+      .unwrap()
+      .then(() => {
+        dispatch(fetchProcess());
+        toast.success("Process deleted successfully");
+      })
+      .catch((error) => {
+        console.error("Delete failed:", error);
+        toast.error("Delete failed");
+      })
+      .finally(() => {
+        setShowDeleteConfirm(false);
+        setSelectedProcessId(null);
+      });
+  };
 
   return (
     <div className="space-y-8">
@@ -125,13 +154,17 @@ export default function Recipe() {
           <tbody>
             {Array.isArray(recipe.recipes) && recipe.recipes.length > 0 ? (
               recipe.recipes.map((item, idx) => (
-                <tr key={item._id || idx} className="hover:bg-gray-50 text-gray-800">
+                <tr
+                  key={item._id || idx}
+                  className="hover:bg-gray-50 text-gray-800"
+                >
                   <td className="px-4 py-3 border-b">{idx + 1}</td>
                   <td className="px-4 py-3 border-b">{item.recipeId}</td>
                   <td className="px-4 py-3 border-b">{item.name}</td>
                   <td className="px-4 py-3 border-b">{item.description}</td>
                   <td className="px-4 py-3 border-b">
-                    {item.processes?.map((p) => p?.name || p)?.join(" -> ") || "No Process"}
+                    {item.processes?.map((p) => p?.name || p)?.join(" -> ") ||
+                      "No Process"}
                   </td>
                   <td className="px-4 py-3 border-b">
                     <button
@@ -148,7 +181,18 @@ export default function Recipe() {
                     >
                       <FaEdit className="text-blue-600" />
                     </button>
-                    <button className="rounded-full p-2 bg-red-100 hover:bg-red-200 transition-colors" title="Delete">
+                    <button
+                      className="rounded-full p-2 bg-red-100 hover:bg-red-200 transition-colors"
+                      onClick={() => {
+                        setSelectedProcessId(item.recipeId);
+                        setShowDeleteConfirm(true);
+
+                        console.log(
+                          "Deleting process with ID:",
+                          item.recipeId
+                        );
+                      }}
+                    >
                       <FaTrash className="text-red-600" />
                     </button>
                   </td>
@@ -220,7 +264,10 @@ export default function Recipe() {
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 border border-gray-200 rounded-lg p-4 max-h-64 overflow-y-auto">
                   {process?.processes?.map((proc) => (
-                    <label key={proc._id} className="flex items-center space-x-2">
+                    <label
+                      key={proc._id}
+                      className="flex items-center space-x-2"
+                    >
                       <input
                         type="checkbox"
                         value={proc._id}
@@ -236,7 +283,10 @@ export default function Recipe() {
 
               <div className="bg-white rounded-xl shadow p-5">
                 <label className="block text-base font-semibold text-gray-800 mb-3">
-                  Processes in Recipe <span className="text-sm text-gray-500">(Drag to Reorder)</span>
+                  Processes in Recipe{" "}
+                  <span className="text-sm text-gray-500">
+                    (Drag to Reorder)
+                  </span>
                 </label>
 
                 <div className="border rounded-md bg-gray-50 p-3">
@@ -254,9 +304,15 @@ export default function Recipe() {
                             </li>
                           ) : (
                             selectedProcesses.map((procId, i) => {
-                              const procObj = process?.processes?.find((p) => p._id === procId);
+                              const procObj = process?.processes?.find(
+                                (p) => p._id === procId
+                              );
                               return (
-                                <Draggable key={procId} draggableId={procId} index={i}>
+                                <Draggable
+                                  key={procId}
+                                  draggableId={procId}
+                                  index={i}
+                                >
                                   {(provided) => (
                                     <li
                                       ref={provided.innerRef}
@@ -265,7 +321,9 @@ export default function Recipe() {
                                       className="flex items-center justify-between bg-white border border-gray-200 rounded-md px-4 py-2 shadow-sm hover:shadow-md transition duration-200 ease-in-out cursor-move"
                                     >
                                       <div className="flex items-center gap-2">
-                                        <span className="text-gray-400 text-lg">☰</span>
+                                        <span className="text-gray-400 text-lg">
+                                          ☰
+                                        </span>
                                         <span className="text-gray-800 font-medium">
                                           {procObj ? procObj.name : procId}
                                         </span>
@@ -300,6 +358,32 @@ export default function Recipe() {
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
               >
                 {isEditMode ? "Update Recipe" : "Create Recipe"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              Are you sure you want to delete this recipe?
+            </h3>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setSelectedProcessId(null);
+                }}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteRecipe}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+              >
+                Delete
               </button>
             </div>
           </div>

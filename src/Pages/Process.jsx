@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   addProcess,
+  deleteProcess,
   fetchProcess,
   updateProcess,
 } from "../redux/features/processSlice";
@@ -18,6 +19,8 @@ export default function Process() {
   const [days, setDays] = useState(""); // initialize as empty string
   const [isEditMode, setIsEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedProcessId, setSelectedProcessId] = useState(null);
 
   useEffect(() => {
     dispatch(fetchProcess());
@@ -25,54 +28,72 @@ export default function Process() {
 
   console.log(process);
 
-const resetForm = () => {
-  setShowModal(false);
-  setProcessName("");
-  setDescription("");
-  setDays("");
-  setIsEditMode(false);
-  setEditId(null);
-};
-
-  const handleSubmitProcess = () => {
-  if (!processName || !description || !days) {
-    toast.error("All fields are required");
-    return;
-  }
-
-  const processData = {
-    name: processName,
-    description,
-    day: days,
+  const resetForm = () => {
+    setShowModal(false);
+    setProcessName("");
+    setDescription("");
+    setDays("");
+    setIsEditMode(false);
+    setEditId(null);
   };
 
-  if (isEditMode && editId) {
-    dispatch(updateProcess({ id: editId, updatedProcess: processData }))
-      .unwrap()
-      .then(() => {
-        dispatch(fetchProcess()); // ✅ refresh list after update
-        resetForm();
-        // toast.success("Process updated successfully");
-      })
-      .catch((error) => {
-        console.error("Update failed:", error);
-        toast.error("Update failed");
-      });
-  } else {
-    dispatch(addProcess(processData))
-      .unwrap()
-      .then(() => {
-        dispatch(fetchProcess()); // ✅ refresh list after add
-        resetForm();
-        toast.success("Process added successfully");
-      })
-      .catch((error) => {
-        console.error("Add failed:", error);
-        toast.error("Add failed");
-      });
-  }
-};
+  const handleSubmitProcess = () => {
+    if (!processName || !description || !days) {
+      toast.error("All fields are required");
+      return;
+    }
 
+    const processData = {
+      name: processName,
+      description,
+      day: days,
+    };
+
+    if (isEditMode && editId) {
+      dispatch(updateProcess({ id: editId, updatedProcess: processData }))
+        .unwrap()
+        .then(() => {
+          dispatch(fetchProcess()); // ✅ refresh list after update
+          resetForm();
+          // toast.success("Process updated successfully");
+        })
+        .catch((error) => {
+          console.error("Update failed:", error);
+          toast.error("Update failed");
+        });
+    } else {
+      dispatch(addProcess(processData))
+        .unwrap()
+        .then(() => {
+          dispatch(fetchProcess()); // ✅ refresh list after add
+          resetForm();
+          toast.success("Process added successfully");
+        })
+        .catch((error) => {
+          console.error("Add failed:", error);
+          toast.error("Add failed");
+        });
+    }
+  };
+
+  const confirmDeleteProcess = () => {
+    if (!selectedProcessId) return;
+
+    dispatch(deleteProcess(selectedProcessId))
+      .unwrap()
+      .then(() => {
+        dispatch(fetchProcess());
+        toast.success("Process deleted successfully");
+      })
+      .catch((error) => {
+        console.error("Delete failed:", error);
+        toast.error("Delete failed");
+      })
+      .finally(() => {
+        setShowDeleteConfirm(false);
+        setSelectedProcessId(null);
+      });
+  };
 
   return (
     <div className="space-y-8">
@@ -134,7 +155,15 @@ const resetForm = () => {
                     </button>
                     <button
                       className="rounded-full p-2 bg-red-100 hover:bg-red-200 transition-colors"
-                      onClick={() => console.log("Delete", item._id)}
+                      onClick={() => {
+                        setSelectedProcessId(item.processId);
+                        setShowDeleteConfirm(true);
+                        
+                        console.log(
+                          "Deleting process with ID:",
+                          item.processId
+                        );
+                      }}
                     >
                       <FaTrash className="text-red-600" />
                     </button>
@@ -205,6 +234,36 @@ const resetForm = () => {
                 onClick={handleSubmitProcess}
               >
                 {isEditMode ? "Update" : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-xl w-full max-w-md shadow-lg space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800">
+              Confirm Deletion
+            </h3>
+            <p className="text-gray-600">
+              Are you sure you want to delete this process?
+            </p>
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setSelectedProcessId(null);
+                }}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteProcess}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+              >
+                Delete
               </button>
             </div>
           </div>

@@ -44,11 +44,11 @@ export const updateProcess = createAsyncThunk(
 );
 export const deleteProcess = createAsyncThunk(
   "process/deleteProcess",
-  async (id, deletedProcess) => {
+  async (processId) => {
     try {
       const response = await axiosConfig.delete(
-        `/processes/${id}`,
-        deletedProcess
+        `/processes/${processId}`,
+      
       );
       return response.data;
     } catch (error) {
