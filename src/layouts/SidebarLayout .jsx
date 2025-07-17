@@ -44,6 +44,20 @@ const SidebarLayout = () => {
               Recipe
             </NavLink>
 
+              <NavLink
+              to="newpo"
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  isActive
+                    ? "bg-gray-700 text-yellow-400"
+                    : "hover:bg-gray-800 text-white"
+                }`
+              }
+            >
+              <FaFileInvoice />
+             New PO
+            </NavLink>
+
             <NavLink
               to="po-detail"
               className={({ isActive }) =>

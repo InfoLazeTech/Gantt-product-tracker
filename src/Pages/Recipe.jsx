@@ -104,25 +104,23 @@ export default function Recipe() {
       toast.error("Something went wrong.");
     }
   };
+const handleDeleteRecipe = () => {
+  if (!selectedProcessId) return;
+  dispatch(deleteRecipe({ id: selectedProcessId }))
+    .unwrap()
+    .then(() => {
+      toast.success("Recipe deleted successfully");
+    })
+    .catch((error) => {
+      console.error("Delete failed:", error);
+      toast.error("Delete failed");
+    })
+    .finally(() => {
+      setShowDeleteConfirm(false);
+      setSelectedProcessId(null);
+    });
+};
 
-  const handleDeleteRecipe  = () => {
-    if (!selectedProcessId) return;
-
-    dispatch(deleteRecipe(selectedProcessId))
-      .unwrap()
-      .then(() => {
-        dispatch(fetchProcess());
-        toast.success("Process deleted successfully");
-      })
-      .catch((error) => {
-        console.error("Delete failed:", error);
-        toast.error("Delete failed");
-      })
-      .finally(() => {
-        setShowDeleteConfirm(false);
-        setSelectedProcessId(null);
-      });
-  };
 
   return (
     <div className="space-y-8">
@@ -187,10 +185,7 @@ export default function Recipe() {
                         setSelectedProcessId(item.recipeId);
                         setShowDeleteConfirm(true);
 
-                        console.log(
-                          "Deleting process with ID:",
-                          item.recipeId
-                        );
+                        console.log("Deleting process with ID:", item.recipeId);
                       }}
                     >
                       <FaTrash className="text-red-600" />
