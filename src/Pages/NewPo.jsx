@@ -4,7 +4,6 @@ import {
   FaCalendarAlt,
   FaUser,
   FaHashtag,
-  FaPlus,
   FaTrash,
   FaGripVertical,
 } from "react-icons/fa";
@@ -42,43 +41,54 @@ const ProductionOrderForm = () => {
         <form className="px-8 py-8 space-y-8">
           {/* PO Details */}
           <div>
-            <h3 className="text-base font-semibold text-gray-600 mb-2">Order Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <h3 className="text-sm font-semibold text-gray-700 mb-1">Order Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="relative">
-                <FaHashtag className="absolute left-3 top-3 text-gray-300" />
+                <FaHashtag className="absolute left-2 top-2.5 text-gray-300 text-sm" />
                 <input
                   type="text"
                   placeholder="PO Number"
-                  className="pl-10 pr-4 py-2 border border-gray-200 rounded-md w-full focus:ring-2 focus:ring-gray-400 focus:outline-none bg-gray-50 text-gray-800"
+                  className="pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg w-full focus:ring-2 focus:ring-gray-400 focus:outline-none bg-gray-50 text-gray-800 text-sm shadow-sm"
                 />
               </div>
               <div className="relative">
-                <FaUser className="absolute left-3 top-3 text-gray-300" />
+                <FaUser className="absolute left-2 top-2.5 text-gray-300 text-sm" />
                 <input
                   type="text"
                   placeholder="Customer Name"
-                  className="pl-10 pr-4 py-2 border border-gray-200 rounded-md w-full focus:ring-2 focus:ring-gray-400 focus:outline-none bg-gray-50 text-gray-800"
+                  className="pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg w-full focus:ring-2 focus:ring-gray-400 focus:outline-none bg-gray-50 text-gray-800 text-sm shadow-sm"
                 />
               </div>
             </div>
           </div>
           {/* Date & Recipe */}
           <div>
-            <h3 className="text-base font-semibold text-gray-600 mb-2">Schedule & Recipe</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <h3 className="text-sm font-semibold text-gray-700 mb-1">Schedule</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="relative">
-                <FaCalendarAlt className="absolute left-3 top-3 text-gray-300" />
+                <FaCalendarAlt className="absolute left-2 top-2.5 text-gray-300 text-sm" />
                 <input
                   type="date"
-                  className="pl-10 pr-4 py-2 border border-gray-200 rounded-md w-full focus:ring-2 focus:ring-gray-400 focus:outline-none bg-gray-50 text-gray-800"
+                  className="pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg w-full focus:ring-2 focus:ring-gray-400 focus:outline-none bg-gray-50 text-gray-800 text-sm shadow-sm"
+                  placeholder="Start Date"
                 />
               </div>
-              <div>
-                <select className="border border-gray-200 rounded-md px-4 py-2 w-full focus:ring-2 focus:ring-gray-400 focus:outline-none bg-gray-50 text-gray-800">
-                  <option value="">Select Recipe</option>
-                  {/* Dynamic options */}
-                </select>
+              <div className="relative">
+                <FaCalendarAlt className="absolute left-2 top-2.5 text-gray-300 text-sm" />
+                <input
+                  type="date"
+                  className="pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg w-full focus:ring-2 focus:ring-gray-400 focus:outline-none bg-gray-50 text-gray-800 text-sm shadow-sm"
+                  placeholder="Estimated Date"
+                />
               </div>
+            </div>
+          </div>
+          <div>
+            <div>
+              <select className="border border-gray-200 rounded-lg px-3 py-1.5 w-full focus:ring-2 focus:ring-gray-400 focus:outline-none bg-gray-50 text-gray-800 text-sm shadow-sm">
+                <option value="">--Select Recipe--</option>
+                {/* Dynamic options */}
+              </select>
             </div>
           </div>
           {/* Processes Section */}

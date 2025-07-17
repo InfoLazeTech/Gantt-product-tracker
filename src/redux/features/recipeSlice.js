@@ -115,7 +115,7 @@ const recipeSlice = createSlice({
       .addCase(deleteRecipe.fulfilled, (state, action) => {
         state.loading = false;
         state.message = action.payload.message;
-        state.recipe.recipes = state.recipe.recipes.filter(
+        state.recipes = state.recipes.filter(
           (r) => r.recipeId !== action.meta.arg.id
         );
         toast.success(state.message);

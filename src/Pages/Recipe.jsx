@@ -13,7 +13,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 export default function Recipe() {
   const dispatch = useDispatch();
-  const { recipe, loading } = useSelector((state) => state.recipe);
+  const { recipes, loading } = useSelector((state) => state.recipe);
   const { process } = useSelector((state) => state.process);
 
   const [showModal, setShowModal] = useState(false);
@@ -70,7 +70,7 @@ export default function Recipe() {
     try {
       let result;
       if (isEditMode) {
-        const selectedRecipe = recipe.recipes.find(
+        const selectedRecipe = recipes.find(
           (r) => r._id === editingRecipeId
         );
         if (!selectedRecipe) {
@@ -104,22 +104,22 @@ export default function Recipe() {
       toast.error("Something went wrong.");
     }
   };
-const handleDeleteRecipe = () => {
-  if (!selectedProcessId) return;
-  dispatch(deleteRecipe({ id: selectedProcessId }))
-    .unwrap()
-    .then(() => {
-      toast.success("Recipe deleted successfully");
-    })
-    .catch((error) => {
-      console.error("Delete failed:", error);
-      toast.error("Delete failed");
-    })
-    .finally(() => {
-      setShowDeleteConfirm(false);
-      setSelectedProcessId(null);
-    });
-};
+  const handleDeleteRecipe = () => {
+    if (!selectedProcessId) return;
+    dispatch(deleteRecipe({ id: selectedProcessId }))
+      .unwrap()
+      .then(() => {
+        toast.success("Recipe deleted successfully");
+      })
+      .catch((error) => {
+        console.error("Delete failed:", error);
+        toast.error("Delete failed");
+      })
+      .finally(() => {
+        setShowDeleteConfirm(false);
+        setSelectedProcessId(null);
+      });
+  };
 
 
   return (
@@ -150,8 +150,8 @@ const handleDeleteRecipe = () => {
             </tr>
           </thead>
           <tbody>
-            {Array.isArray(recipe.recipes) && recipe.recipes.length > 0 ? (
-              recipe.recipes.map((item, idx) => (
+            {Array.isArray(recipes) && recipes.length > 0 ? (
+              recipes.map((item, idx) => (
                 <tr
                   key={item._id || idx}
                   className="hover:bg-gray-50 text-gray-800"
