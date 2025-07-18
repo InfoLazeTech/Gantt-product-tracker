@@ -5,6 +5,7 @@ import storage from 'redux-persist/lib/storage'; // defaults to localStorage
 import { combineReducers } from 'redux';
 import processReducer from './features/processSlice';
 import recipeReducer from './features/recipeSlice';
+import itemReducer from './features/itemSlice';
 
 const persistConfig = {
     key: 'root',
@@ -16,6 +17,7 @@ const persistConfig = {
 const rootReducer = combineReducers({
    process: processReducer,
    recipe: recipeReducer,
+   item:itemReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
