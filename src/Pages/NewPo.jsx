@@ -70,7 +70,7 @@ const ProductionOrderForm = () => {
             New Production Order
           </h2>
           <p className="text-gray-400 text-xs mt-1">
-            Start tracking your manufacturing process efficiently.
+            Start tracking your manufacturing process efficiently..
           </p>
         </div>
 
