@@ -1,6 +1,6 @@
 import React from "react";
 import { Outlet, NavLink } from "react-router-dom";
-import { FaTools, FaBookOpen, FaFileInvoice } from "react-icons/fa";
+import { FaBookOpen, FaClipboardList, FaFileInvoice, FaSyncAlt } from "react-icons/fa";
 import logo from "../assets/timelineLogo.png"
 
 const SidebarLayout = () => {
@@ -27,7 +27,7 @@ const SidebarLayout = () => {
                 }`
               }
             >
-              <FaTools />
+              <FaSyncAlt />
               Process
             </NavLink>
 
@@ -67,7 +67,7 @@ const SidebarLayout = () => {
                 }`
               }
             >
-              <FaFileInvoice />
+              <FaClipboardList />
               PO Detail
             </NavLink>
           </nav>
