@@ -114,7 +114,7 @@ export default function PODetail() {
   console.log("edit:", editTask);
 
 
-  const filteredPOs = allPOs.filter((po) => {
+  const filteredPOs = poDetails.filter((po) => {
     const searchText = filters.search.toLowerCase();
 
     const matchesSearch =
