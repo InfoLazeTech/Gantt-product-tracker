@@ -14,76 +14,76 @@ import { fetchProduct, updateProcessItem } from "../redux/features/productSlice"
 import { min, max } from "date-fns";
 import { toast } from "react-toastify";
 
-const allPOs = [
-  {
-    id: "PO-001",
-    customerName: "ABC Ltd",
-    tasks: [
-      {
-        name: "Project Planning",
-        start: "2025-07-01",
-        end: "2025-07-05",
-        progress: 50,
-        status: "In Progress",
-      },
-      {
-        name: "Requirements Gathering",
-        start: "2025-07-02",
-        end: "2025-07-08",
-        progress: 25,
-        status: "In Progress",
-      },
-      {
-        name: "Design Phase",
-        start: "2025-07-08",
-        end: "2025-07-10",
-        progress: 30,
-        status: "In Progress",
-      },
-      {
-        name: "Development - Frontend",
-        start: "2025-07-09",
-        end: "2025-07-18",
-        progress: 20,
-        status: "Pending",
-      },
-      {
-        name: "Development - Backend",
-        start: "2025-07-20",
-        end: "2025-07-24",
-        progress: 10,
-        status: "Pending",
-      },
-      {
-        name: "Client Feedback",
-        start: "2025-07-11",
-        end: "2025-07-14",
-        progress: 90,
-        status: "Completed",
-      },
-    ],
-  },
-  {
-    id: "PO-002",
-    customerName: "XYZ Corp",
-    tasks: [
-      {
-        name: "Testing",
-        start: "2025-07-10",
-        end: "2025-07-14",
-        progress: 20,
-        status: "In Progress",
-      },
-      {
-        name: "Deployment",
-        start: "2025-07-15",
-        end: "2025-07-18",
-        progress: 0,
-        status: "Pending",
-      },
-    ],
-  },
-];
+// const allPOs = [
+//   {
+//     id: "PO-001",
+//     customerName: "ABC Ltd",
+//     tasks: [
+//       {
+//         name: "Project Planning",
+//         start: "2025-07-01",
+//         end: "2025-07-05",
+//         progress: 50,
+//         status: "In Progress",
+//       },
+//       {
+//         name: "Requirements Gathering",
+//         start: "2025-07-02",
+//         end: "2025-07-08",
+//         progress: 25,
+//         status: "In Progress",
+//       },
+//       {
+//         name: "Design Phase",
+//         start: "2025-07-08",
+//         end: "2025-07-10",
+//         progress: 30,
+//         status: "In Progress",
+//       },
+//       {
+//         name: "Development - Frontend",
+//         start: "2025-07-09",
+//         end: "2025-07-18",
+//         progress: 20,
+//         status: "Pending",
+//       },
+//       {
+//         name: "Development - Backend",
+//         start: "2025-07-20",
+//         end: "2025-07-24",
+//         progress: 10,
+//         status: "Pending",
+//       },
+//       {
+//         name: "Client Feedback",
+//         start: "2025-07-11",
+//         end: "2025-07-14",
+//         progress: 90,
+//         status: "Completed",
+//       },
+//     ],
+//   },
+//   {
+//     id: "PO-002",
+//     customerName: "XYZ Corp",
+//     tasks: [
+//       {
+//         name: "Testing",
+//         start: "2025-07-10",
+//         end: "2025-07-14",
+//         progress: 20,
+//         status: "In Progress",
+//       },
+//       {
+//         name: "Deployment",
+//         start: "2025-07-15",
+//         end: "2025-07-18",
+//         progress: 0,
+//         status: "Pending",
+//       },
+//     ],
+//   },
+// ];
 
 const dayWidth = 80;
 
