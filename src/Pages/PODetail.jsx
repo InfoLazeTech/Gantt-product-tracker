@@ -1,8 +1,17 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { format, isToday } from "date-fns";
 import { FiPackage } from "react-icons/fi";
-import { FaCalendarAlt, FaRegClock, FaSearch, FaUser } from "react-icons/fa";
+import {
+  FaCalendarAlt,
+  FaClock,
+  FaRegClock,
+  FaSearch,
+  FaUser,
+} from "react-icons/fa";
 import { LuFactory } from "react-icons/lu";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchProduct } from "../redux/features/productSlice";
+import { min, max } from "date-fns";
 
 const allPOs = [
   {
@@ -75,43 +84,47 @@ const allPOs = [
   },
 ];
 
-const chartStartDate = new Date(2025, 6, 1); // July 1, 2025
-// const today = new Date();
 const dayWidth = 80;
 
 export default function PODetail() {
+  const dispatch = useDispatch();
+  const { poDetails } = useSelector((state) => state.product);
+
+  console.log("PO Details:", poDetails);
+
+  useEffect(() => {
+    // Fetch production order details if needed
+    dispatch(fetchProduct());
+  }, [dispatch]);
+
   const [filters, setFilters] = useState({
     search: "",
     status: "All",
     startDate: "",
     endDate: "",
+    recipe: "",
   });
 
   const [selectedPO, setSelectedPO] = useState(null);
   const [editTask, setEditTask] = useState(null);
 
   const filteredPOs = allPOs.filter((po) => {
-    const searchLower = filters.search.toLowerCase();
+    const searchText = filters.search.toLowerCase();
+
     const matchesSearch =
-      po.id.toLowerCase().includes(searchLower) ||
-      po.customerName.toLowerCase().includes(searchLower);
+      po.poNumber?.toLowerCase().includes(searchText) ||
+      po.customerName?.toLowerCase().includes(searchText);
 
-    const matchesStatus =
-      filters.status === "All" ||
-      po.tasks.some((task) => task.status === filters.status);
-
-    const matchesDate =
+    const matchesStartDate =
       !filters.startDate ||
-      !filters.endDate ||
-      po.tasks.some((task) => {
-        const taskStart = new Date(task.start);
-        const start = new Date(filters.startDate);
-        const end = new Date(filters.endDate);
-        return taskStart >= start && taskStart <= end;
-      });
+      new Date(po.startDate) >= new Date(filters.startDate);
 
-    return matchesSearch && matchesStatus && matchesDate;
+    const matchesEndDate =
+      !filters.endDate || new Date(po.endDate) <= new Date(filters.endDate);
+
+    return matchesSearch && matchesStartDate && matchesEndDate;
   });
+  const searchText = filters.search.trim().toLowerCase();
 
   const updateTask = (field, value) => {
     const updatedTasks = selectedPO.tasks.map((t) =>
@@ -126,6 +139,26 @@ export default function PODetail() {
     if (status === "Pending") return "⚪";
     return "";
   };
+  const safeFormat = (dateStr, formatStr) => {
+    const date = new Date(dateStr);
+    return isNaN(date) ? "Invalid date" : format(date, formatStr);
+  };
+
+  const allProcessDates = selectedPO?.recipe?.processes?.flatMap((p) => [
+    new Date(p.start),
+    new Date(p.end),
+  ]);
+
+  const chartStartDate = allProcessDates?.length
+    ? min(allProcessDates)
+    : new Date(); // fallback to today
+
+  const chartEndDate = allProcessDates?.length
+    ? max(allProcessDates)
+    : new Date(); // fallback to today
+
+  const dayCount =
+    Math.ceil((chartEndDate - chartStartDate) / (1000 * 60 * 60 * 24)) + 1;
 
   return (
     <div className="p-4 space-y-6 max-w-screen">
@@ -149,12 +182,13 @@ export default function PODetail() {
                 Find Your Production Order
               </span>
             </label>
+           
             <input
               type="text"
               placeholder="PO Number or Customer Name"
               value={filters.search}
               onChange={(e) =>
-                setFilters({ ...filters, search: e.target.value })
+                setFilters((prev) => ({ ...prev, search: e.target.value }))
               }
               className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -190,25 +224,21 @@ export default function PODetail() {
         </div>
 
         {/* PO List */}
-        <div className="bg-gray-50 p-4 rounded max-h-96 overflow-y-auto border">
+        <div className="bg-gray-50 mt-10 p-4 rounded max-h-96 overflow-y-auto border">
+          <h3 className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
+            All Production Orders
+          </h3>
           <div className="space-y-2">
-            {filteredPOs.map((po) => {
-              const isActive = selectedPO?.id === po.id;
-              return (
-                <div
-                  key={po.id}
-                  onClick={() => setSelectedPO(po)}
-                  className={`p-3 border rounded cursor-pointer transition 
-          ${
-            isActive
-              ? "bg-blue-600 text-white"
-              : "bg-white text-black hover:bg-blue-50"
-          }`}
-                >
-                  <strong>{po.id}</strong> - {po.customerName}
-                </div>
-              );
-            })}
+            {poDetails.map((po) => (
+              <div
+                key={po._id}
+                onClick={() => setSelectedPO(po)} // ✅ FULL po object passed here
+                className="p-3 border rounded bg-white"
+              >
+                <strong className="text-blue-600">{po.PONumber}</strong> -{" "}
+                {po.customerName}
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -220,7 +250,7 @@ export default function PODetail() {
           <div>
             <h2 className="text-2xl font-bold mt-6 mb-2 flex items-center gap-2 ">
               <FiPackage className="w-5 h-5 text-blue-600" />
-              Production Order: {selectedPO.id}
+              Production Order: {selectedPO.PONumber}
             </h2>
             <div className="flex flex-wrap justify-between w-full text-sm text-gray-600 mb-4">
               {/* Customer */}
@@ -243,15 +273,12 @@ export default function PODetail() {
               </div>
 
               {/* Estimated Date */}
-              <div className="flex items-center text-sm gap-2">
-                <FaRegClock />
-                <span>
-                  <strong>Estimated Delivery:</strong>{" "}
-                  {selectedPO.endDate
-                    ? format(new Date(selectedPO.endDate), "dd MMM yyyy")
-                    : "N/A"}
-                </span>
-              </div>
+              <span>
+                <strong>Estimated Delivery:</strong>{" "}
+                {selectedPO.estimatedEndDate
+                  ? format(new Date(selectedPO.estimatedEndDate), "dd MMM yyyy")
+                  : "N/A"}
+              </span>
 
               {/* Progress */}
               <div className="flex items-center text-sm gap-2">
@@ -262,7 +289,7 @@ export default function PODetail() {
               </div>
             </div>
 
-            <div className="flex justify-around text-sm text-center gap-4 mb-4">
+            <div className="flex justify-center text-sm text-center gap-4 mb-4">
               {[
                 { label: "Pending", icon: "⚪" },
                 { label: "In Progress", icon: "🟡" },
@@ -283,33 +310,60 @@ export default function PODetail() {
               ))}
             </div>
             <div className="overflow-x-auto">
-              <div className="min-w-[2400px]">
+              <div className="min-w-[240px]">
                 {/* Timeline Header: Start - End Date */}
-                <div className="flex border-b text-sm font-semibold bg-gray-100 sticky top-0 z-10">
+                {/* <div className="flex border-b text-sm font-semibold bg-gray-100 sticky top-0 z-10">
                   <div
                     className="text-center border-r"
-                    style={{ width: `${30 * dayWidth}px` }}
+                    style={{ width: `${14 * dayWidth}px` }}
                   >
                     {format(chartStartDate, "MMM dd")} -{" "}
                     {format(
-                      new Date(chartStartDate.getTime() + 30 * 86400000),
+                      new Date(chartStartDate.getTime() + 14 * 86400000),
                       "MMM dd, yyyy"
                     )}
                   </div>
-                </div>
+                </div> */}
 
                 {/* Daily Dates Row */}
-                <div className="flex border-b text-xs bg-gray-50 ">
-                  <div className="w-40 bg-gray-50 border-r px-2 py-1 font-medium sticky left-0 z-10">
+                {/* <div className="flex text-sm font-semibold bg-gray-100 border-b sticky top-0 z-10">
+                  <div className="w-40 bg-gray-100 border-r px-2 py-1 sticky left-0 z-10">
                     Task Name
                   </div>
-                  {Array.from({ length: 30 }).map((_, i) => {
+                  {Array.from({ length: dayCount }).map((_, i) => {
+                    const date = new Date(chartStartDate);
+                    date.setDate(date.getDate() + i);
+                    const prevDate = new Date(chartStartDate);
+                    prevDate.setDate(prevDate.getDate() + i - 1);
+                    const isNewMonth =
+                      i === 0 || date.getMonth() !== prevDate.getMonth();
+                    return isNewMonth ? (
+                      <div
+                        key={`month-${i}`}
+                        className="text-center border-r bg-gray-200 py-1"
+                        style={{ width: `${dayWidth}px` }}
+                      >
+                        {format(date, "MMMM yyyy")}
+                      </div>
+                    ) : (
+                      <div
+                        key={`month-${i}`}
+                        style={{ width: `${dayWidth}px` }}
+                      />
+                    );
+                  })}
+                </div> */}
+
+                {/* Daily Header */}
+                {/* <div className="flex border-b text-xs bg-gray-50">
+                  <div className="w-40 bg-gray-50 border-r px-2 py-1 font-medium sticky left-0 z-10"></div>
+                  {Array.from({ length: dayCount }).map((_, i) => {
                     const date = new Date(chartStartDate);
                     date.setDate(date.getDate() + i);
                     return (
                       <div
                         key={i}
-                        className={`w-[80px] text-center border-r py-1 ${
+                        className={`w-[${dayWidth}px] text-center border-r py-1 ${
                           isToday(date) ? "bg-yellow-200 font-semibold" : ""
                         }`}
                       >
@@ -317,75 +371,117 @@ export default function PODetail() {
                       </div>
                     );
                   })}
-                </div>
+                </div> */}
 
+                {selectedPO && (
+                  <div className="flex justify-between items-center text-sm text-gray-600 mb-2 px-2">
+                    <div className="flex items-center gap-2">
+                      <FaCalendarAlt className="text-gray-400" />
+                      <p>
+                        <strong>PO Created:</strong>{" "}
+                        {selectedPO.startDate
+                          ? format(
+                              new Date(selectedPO.startDate),
+                              "dd MMM yyyy"
+                            )
+                          : "N/A"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <FaClock className="text-gray-400" />
+                      <p>
+                        <strong>Delivered (Est.):</strong>{" "}
+                        {selectedPO.estimatedEndDate
+                          ? format(
+                              new Date(selectedPO.estimatedEndDate),
+                              "dd MMM yyyy"
+                            )
+                          : "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                )}
                 {/* Tasks */}
-                {selectedPO.tasks
-                  .filter(
-                    (t) =>
-                      filters.status === "All" || t.status === filters.status
-                  )
-                  .map((task, i) => {
-                    const startIndex =
-                      (new Date(task.start).getTime() -
-                        chartStartDate.getTime()) /
-                      (1000 * 60 * 60 * 24);
-                    const duration =
-                      (new Date(task.end).getTime() -
-                        new Date(task.start).getTime()) /
-                        (1000 * 60 * 60 * 24) +
-                      1;
+                {selectedPO?.processes?.length > 0 &&
+                  selectedPO.processes
+                    .filter(
+                      (p) =>
+                        filters.status === "All" ||
+                        p.processId.status === filters.status
+                    )
+                    .map((p) => {
+                      const process = p.processId;
 
-                    return (
-                      <div
-                        key={i}
-                        className="flex items-center h-12 border-b relative"
-                      >
-                        <div className="absolute left-0 w-40 pl-2 text-sm font-medium text-gray-700">
-                          <span className="mr-1">{statusDot(task.status)}</span>
-                          {task.name}
-                        </div>
-                        <div className="flex-1 ml-40 flex relative">
-                          <div
-                            className="relative group"
-                            style={{ marginLeft: `${startIndex * dayWidth}px` }}
-                          >
+                      const startIndex =
+                        (new Date(process.start).getTime() -
+                          chartStartDate.getTime()) /
+                        (1000 * 60 * 60 * 24);
+
+                      const duration =
+                        (new Date(process.end).getTime() -
+                          new Date(process.start).getTime()) /
+                          (1000 * 60 * 60 * 24) +
+                        1;
+
+                      return (
+                        <div
+                          key={p._id}
+                          className="flex items-center h-12 border-b relative"
+                        >
+                          {/* Process Name + Status Dot */}
+                          <div className="absolute left-0 w-40 pl-2 text-sm font-medium text-gray-700">
+                            <span className="mr-1">
+                              {statusDot(process.status)}
+                            </span>
+                            {process.name}
+                          </div>
+
+                          {/* Bar */}
+                          <div className="flex-1 ml-40 flex relative">
                             <div
-                              className="h-6 bg-gray-300 rounded overflow-hidden cursor-pointer relative hover:opacity-90"
-                              style={{ width: `${duration * dayWidth}px` }}
-                              onClick={() => setEditTask(task)}
+                              className="relative group"
+                              style={{
+                                marginLeft: `${startIndex * dayWidth}px`,
+                              }}
                             >
-                              {/* Progress Bar Fill */}
                               <div
-                                className={`h-full text-white text-xs flex items-center justify-center transition ${
-                                  task.status === "Completed"
-                                    ? "bg-green-600"
-                                    : task.status === "In Progress"
-                                    ? "bg-yellow-500"
-                                    : "bg-gray-400"
-                                }`}
-                                style={{ width: `${task.progress}%` }}
+                                className="h-6 bg-gray-300 rounded overflow-hidden cursor-pointer relative hover:opacity-90"
+                                style={{ width: `${duration * dayWidth}px` }}
+                                onClick={() => setEditTask(process)}
                               >
-                                {task.progress}%
-                              </div>
-
-                              {/* Tooltip */}
-                              <div className="absolute opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 group-hover:flex flex-col bg-black text-white text-xs px-3 py-2 rounded shadow-lg z-50 whitespace-nowrap top-full mt-1 left-1/2 -translate-x-1/2 transition-all duration-200">
-                                <div className="font-semibold">{task.name}</div>
-                                <div>
-                                  {duration} day{duration > 1 ? "s" : ""}
+                                {/* Progress Fill */}
+                                <div
+                                  className={`h-full text-white text-xs flex items-center justify-center transition ${
+                                    process.status === "Completed"
+                                      ? "bg-green-600"
+                                      : process.status === "In Progress"
+                                      ? "bg-yellow-500"
+                                      : "bg-gray-400"
+                                  }`}
+                                  style={{ width: `${process.progress || 0}%` }}
+                                >
+                                  {process.progress || 0}%
                                 </div>
-                                <div>
-                                  {format(new Date(task.start), "MMM dd")} -{" "}
-                                  {format(new Date(task.end), "MMM dd")}
+
+                                {/* Tooltip */}
+                                <div className="absolute opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 group-hover:flex flex-col bg-black text-white text-xs px-3 py-2 rounded shadow-lg z-50 whitespace-nowrap top-full mt-1 left-1/2 -translate-x-1/2 transition-all duration-200">
+                                  <div className="font-semibold">
+                                    {process.name}
+                                  </div>
+                                  <div>
+                                    {duration} day{duration > 1 ? "s" : ""}
+                                  </div>
+                                  <div>
+                                    {safeFormat(process.start, "MMM dd")} –{" "}
+                                    {safeFormat(process.end, "MMM dd")}
+                                  </div>
                                 </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
               </div>
             </div>
 

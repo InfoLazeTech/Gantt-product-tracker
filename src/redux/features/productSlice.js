@@ -2,13 +2,12 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axiosConfig from "../axiosConfig";
 import { toast } from "react-toastify";
 
-// --- CREATE PRODUCT ASYNC ACTION ---
 export const createProduct = createAsyncThunk(
   "product/createProduct",
   async (productData, { rejectWithValue }) => {
     try {
       const response = await axiosConfig.post("/item", productData);
-      return response.data; // <-- actual created item
+      return response.data;
     } catch (error) {
       const message =
         error.response?.data?.message ||
@@ -20,10 +19,46 @@ export const createProduct = createAsyncThunk(
   }
 );
 
-// --- SLICE ---
+export const fetchProduct = createAsyncThunk(
+  "product/fetchProduct",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axiosConfig.get("/item");
+      return response.data;
+    } catch (error) {
+      const message =
+        error.response?.data?.message ||
+        error.response?.data ||
+        error.message ||
+        "Something went wrong";
+      return rejectWithValue(message);
+    }
+  }
+);
+
+export const fetchProductupdate = createAsyncThunk(
+  "product/fetchProductById",
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await axiosConfig.put(`/item/${id}`);
+      return response.data;
+    } catch (error) {
+      const message =
+        error.response?.data?.message ||
+        error.response?.data ||
+        error.message ||
+        "Something went wrong";
+      return rejectWithValue(message);
+    }
+  }
+);
+
+
+
 const productSlice = createSlice({
   name: "product",
   initialState: {
+    poDetails: [],
     loading: false,
     error: null,
     message: null,
@@ -47,6 +82,20 @@ const productSlice = createSlice({
       .addCase(createProduct.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to create product.";
+        toast.error(state.error);
+      })
+      .addCase(fetchProduct.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.message = null;
+      })
+      .addCase(fetchProduct.fulfilled, (state, action) => {
+        state.loading = false;
+        state.poDetails = action.payload;
+      })
+      .addCase(fetchProduct.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch products.";
         toast.error(state.error);
       });
   },

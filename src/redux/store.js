@@ -10,7 +10,7 @@ import productReducer from './features/productSlice';
 const persistConfig = {
     key: 'root',
     storage,
-    // whitelist: ['counter'], // optionally, only persist specific reducers
+    whitelist: [], // optionally, only persist specific reducers
 };
 
 
