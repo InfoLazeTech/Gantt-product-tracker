@@ -10,8 +10,9 @@ import {
 } from "react-icons/fa";
 import { LuFactory } from "react-icons/lu";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchProduct } from "../redux/features/productSlice";
+import { fetchProduct, updateProcessItem } from "../redux/features/productSlice";
 import { min, max } from "date-fns";
+import { toast } from "react-toastify";
 
 const allPOs = [
   {
@@ -106,7 +107,12 @@ export default function PODetail() {
   });
 
   const [selectedPO, setSelectedPO] = useState(null);
+  console.log("select:", selectedPO);
+
   const [editTask, setEditTask] = useState(null);
+
+  console.log("edit:", editTask);
+
 
   const filteredPOs = allPOs.filter((po) => {
     const searchText = filters.search.toLowerCase();
@@ -127,11 +133,12 @@ export default function PODetail() {
   const searchText = filters.search.trim().toLowerCase();
 
   const updateTask = (field, value) => {
-    const updatedTasks = selectedPO.tasks.map((t) =>
-      t.name === editTask.name ? { ...t, [field]: value } : t
-    );
-    setSelectedPO({ ...selectedPO, tasks: updatedTasks });
+    setEditTask((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
+
 
   const statusDot = (status) => {
     if (status === "Completed") return "🟢";
@@ -160,6 +167,57 @@ export default function PODetail() {
   const dayCount =
     Math.ceil((chartEndDate - chartStartDate) / (1000 * 60 * 60 * 24)) + 1;
 
+
+  const handleSaveEdit = async () => {
+    if (!editTask?._id || !selectedPO?._id) {
+      toast.error("Missing itemId or processId");
+      return;
+    }
+
+    const payload = {
+      itemId: selectedPO._id,
+      processId: editTask?.processId?._id,
+      updateItemData: {
+        startDateTime: editTask.start,
+        endDateTime: editTask.end,
+      },
+    };
+
+    try {
+      const response = await dispatch(updateProcessItem(payload)).unwrap();
+      console.log("📦 Sending payload to backend:", {
+        itemId: selectedPO?._id,
+        processId: editTask?.processId?._id,
+        startDateTime: editTask?.start,
+        endDateTime: editTask?.end
+      });
+      console.log("✅ Backend Response:", response);
+      toast.success(response.message || "Process updated");
+
+      const updatedProcesses = selectedPO.processes.map((p) =>
+        p._id === editTask._id
+          ? {
+            ...p,
+            startDateTime: editTask.start,
+            endDateTime: editTask.end,
+          }
+          : p
+      );
+
+
+      setSelectedPO((prev) => ({
+        ...prev,
+        processes: updatedProcesses,
+      }));
+
+      setEditTask(null);
+    } catch (err) {
+      console.error("❌ Update failed:", err);
+      toast.error(err || "Update failed");
+    }
+  };
+
+
   return (
     <div className="p-4 space-y-6 max-w-screen">
       <div className="mb-6">
@@ -182,7 +240,7 @@ export default function PODetail() {
                 Find Your Production Order
               </span>
             </label>
-           
+
             <input
               type="text"
               placeholder="PO Number or Customer Name"
@@ -298,11 +356,10 @@ export default function PODetail() {
                 <div
                   key={s.label}
                   onClick={() => setFilters({ ...filters, status: s.label })}
-                  className={`cursor-pointer select-none ${
-                    filters.status === s.label
-                      ? "text-blue-600 font-semibold underline"
-                      : "text-gray-600 hover:text-black"
-                  }`}
+                  className={`cursor-pointer select-none ${filters.status === s.label
+                    ? "text-blue-600 font-semibold underline"
+                    : "text-gray-600 hover:text-black"
+                    }`}
                 >
                   <span className="mr-1">{s.icon}</span>
                   {s.label}
@@ -363,9 +420,8 @@ export default function PODetail() {
                     return (
                       <div
                         key={i}
-                        className={`w-[${dayWidth}px] text-center border-r py-1 ${
-                          isToday(date) ? "bg-yellow-200 font-semibold" : ""
-                        }`}
+                        className={`w-[${dayWidth}px] text-center border-r py-1 ${isToday(date) ? "bg-yellow-200 font-semibold" : ""
+                          }`}
                       >
                         {format(date, "MMM dd")}
                       </div>
@@ -381,9 +437,9 @@ export default function PODetail() {
                         <strong>PO Created:</strong>{" "}
                         {selectedPO.startDate
                           ? format(
-                              new Date(selectedPO.startDate),
-                              "dd MMM yyyy"
-                            )
+                            new Date(selectedPO.startDate),
+                            "dd MMM yyyy"
+                          )
                           : "N/A"}
                       </p>
                     </div>
@@ -393,9 +449,9 @@ export default function PODetail() {
                         <strong>Delivered (Est.):</strong>{" "}
                         {selectedPO.estimatedEndDate
                           ? format(
-                              new Date(selectedPO.estimatedEndDate),
-                              "dd MMM yyyy"
-                            )
+                            new Date(selectedPO.estimatedEndDate),
+                            "dd MMM yyyy"
+                          )
                           : "N/A"}
                       </p>
                     </div>
@@ -413,14 +469,12 @@ export default function PODetail() {
                       const process = p.processId;
 
                       const startIndex =
-                        (new Date(process.start).getTime() -
-                          chartStartDate.getTime()) /
+                        (new Date(p.startDateTime).getTime() - chartStartDate.getTime()) /
                         (1000 * 60 * 60 * 24);
 
                       const duration =
-                        (new Date(process.end).getTime() -
-                          new Date(process.start).getTime()) /
-                          (1000 * 60 * 60 * 24) +
+                        (new Date(p.endDateTime).getTime() - new Date(p.startDateTime).getTime()) /
+                        (1000 * 60 * 60 * 24) +
                         1;
 
                       return (
@@ -447,17 +501,23 @@ export default function PODetail() {
                               <div
                                 className="h-6 bg-gray-300 rounded overflow-hidden cursor-pointer relative hover:opacity-90"
                                 style={{ width: `${duration * dayWidth}px` }}
-                                onClick={() => setEditTask(process)}
+                                onClick={() =>
+                                  setEditTask({
+                                    ...p,
+                                    name: p.processId.name,
+                                    start: p.startDateTime,
+                                    end: p.endDateTime,
+                                  })
+                                }
                               >
                                 {/* Progress Fill */}
                                 <div
-                                  className={`h-full text-white text-xs flex items-center justify-center transition ${
-                                    process.status === "Completed"
-                                      ? "bg-green-600"
-                                      : process.status === "In Progress"
+                                  className={`h-full text-white text-xs flex items-center justify-center transition ${process.status === "Completed"
+                                    ? "bg-green-600"
+                                    : process.status === "In Progress"
                                       ? "bg-yellow-500"
                                       : "bg-gray-400"
-                                  }`}
+                                    }`}
                                   style={{ width: `${process.progress || 0}%` }}
                                 >
                                   {process.progress || 0}%
@@ -472,8 +532,7 @@ export default function PODetail() {
                                     {duration} day{duration > 1 ? "s" : ""}
                                   </div>
                                   <div>
-                                    {safeFormat(process.start, "MMM dd")} –{" "}
-                                    {safeFormat(process.end, "MMM dd")}
+                                    {safeFormat(p.startDateTime, "MMM dd")} – {safeFormat(p.endDateTime, "MMM dd")}
                                   </div>
                                 </div>
                               </div>
@@ -510,14 +569,21 @@ export default function PODetail() {
                     className="border p-2 rounded w-full mb-3"
                   />
 
-                  <div className="flex justify-end">
+                  <div className="flex justify-end gap-2">
                     <button
                       onClick={() => setEditTask(null)}
-                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                      className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 transition"
                     >
                       Close
                     </button>
+                    <button
+                      onClick={handleSaveEdit}
+                      className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+                    >
+                      Save
+                    </button>
                   </div>
+
                 </div>
               </div>
             )}
