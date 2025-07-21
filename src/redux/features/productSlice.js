@@ -53,7 +53,23 @@ export const fetchProductupdate = createAsyncThunk(
   }
 );
 
-
+export const updateRecipeItem = createAsyncThunk(
+  "product/updateRecipeItem",
+  async ({ itemId, processId, updateItemData }, { rejectWithValue }) => {
+    try {
+      const response = await axiosConfig.put(
+        `/item/${itemId}/process/${processId}`,
+        updateItemData
+      );
+      return response.data;
+    } catch (error) {
+      console.error("❌ Update Error:", error);
+      return rejectWithValue(
+        error.response?.data?.message || "Something went wrong"
+      );
+    }
+  }
+);
 
 const productSlice = createSlice({
   name: "product",
@@ -96,6 +112,19 @@ const productSlice = createSlice({
       .addCase(fetchProduct.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to fetch products.";
+        toast.error(state.error);
+      })
+      .addCase(updateRecipeItem.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(updateRecipeItem.fulfilled, (state, action) => {
+        state.loading = false;
+        state.message = action.payload.message;
+        toast.success(state.message);
+      })
+      .addCase(updateRecipeItem.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
         toast.error(state.error);
       });
   },
