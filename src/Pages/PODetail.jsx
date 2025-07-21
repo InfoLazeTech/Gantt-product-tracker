@@ -312,7 +312,7 @@ export default function PODetail() {
             <div className="overflow-x-auto">
               <div className="min-w-[240px]">
                 {/* Timeline Header: Start - End Date */}
-                {/* <div className="flex border-b text-sm font-semibold bg-gray-100 sticky top-0 z-10">
+                <div className="flex border-b text-sm font-semibold bg-gray-100 sticky top-0 z-10">
                   <div
                     className="text-center border-r"
                     style={{ width: `${14 * dayWidth}px` }}
@@ -323,10 +323,10 @@ export default function PODetail() {
                       "MMM dd, yyyy"
                     )}
                   </div>
-                </div> */}
+                </div>
 
                 {/* Daily Dates Row */}
-                {/* <div className="flex text-sm font-semibold bg-gray-100 border-b sticky top-0 z-10">
+                <div className="flex text-sm font-semibold bg-gray-100 border-b sticky top-0 z-10">
                   <div className="w-40 bg-gray-100 border-r px-2 py-1 sticky left-0 z-10">
                     Task Name
                   </div>
@@ -352,10 +352,10 @@ export default function PODetail() {
                       />
                     );
                   })}
-                </div> */}
+                </div>
 
                 {/* Daily Header */}
-                {/* <div className="flex border-b text-xs bg-gray-50">
+                <div className="flex border-b text-xs bg-gray-50">
                   <div className="w-40 bg-gray-50 border-r px-2 py-1 font-medium sticky left-0 z-10"></div>
                   {Array.from({ length: dayCount }).map((_, i) => {
                     const date = new Date(chartStartDate);
@@ -371,7 +371,7 @@ export default function PODetail() {
                       </div>
                     );
                   })}
-                </div> */}
+                </div>
 
                 {selectedPO && (
                   <div className="flex justify-between items-center text-sm text-gray-600 mb-2 px-2">
