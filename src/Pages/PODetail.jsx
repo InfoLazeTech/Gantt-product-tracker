@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { format, isToday } from "date-fns";
+import {
+  addDays,
+  differenceInCalendarDays,
+  eachDayOfInterval,
+  format,
+  isSameDay,
+  isToday,
+} from "date-fns";
 import { FiPackage } from "react-icons/fi";
 import {
   FaCalendarAlt,
@@ -10,82 +17,12 @@ import {
 } from "react-icons/fa";
 import { LuFactory } from "react-icons/lu";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchProduct, updateProcessItem } from "../redux/features/productSlice";
+import {
+  fetchProduct,
+  updateProcessItem,
+} from "../redux/features/productSlice";
 import { min, max } from "date-fns";
 import { toast } from "react-toastify";
-
-// const allPOs = [
-//   {
-//     id: "PO-001",
-//     customerName: "ABC Ltd",
-//     tasks: [
-//       {
-//         name: "Project Planning",
-//         start: "2025-07-01",
-//         end: "2025-07-05",
-//         progress: 50,
-//         status: "In Progress",
-//       },
-//       {
-//         name: "Requirements Gathering",
-//         start: "2025-07-02",
-//         end: "2025-07-08",
-//         progress: 25,
-//         status: "In Progress",
-//       },
-//       {
-//         name: "Design Phase",
-//         start: "2025-07-08",
-//         end: "2025-07-10",
-//         progress: 30,
-//         status: "In Progress",
-//       },
-//       {
-//         name: "Development - Frontend",
-//         start: "2025-07-09",
-//         end: "2025-07-18",
-//         progress: 20,
-//         status: "Pending",
-//       },
-//       {
-//         name: "Development - Backend",
-//         start: "2025-07-20",
-//         end: "2025-07-24",
-//         progress: 10,
-//         status: "Pending",
-//       },
-//       {
-//         name: "Client Feedback",
-//         start: "2025-07-11",
-//         end: "2025-07-14",
-//         progress: 90,
-//         status: "Completed",
-//       },
-//     ],
-//   },
-//   {
-//     id: "PO-002",
-//     customerName: "XYZ Corp",
-//     tasks: [
-//       {
-//         name: "Testing",
-//         start: "2025-07-10",
-//         end: "2025-07-14",
-//         progress: 20,
-//         status: "In Progress",
-//       },
-//       {
-//         name: "Deployment",
-//         start: "2025-07-15",
-//         end: "2025-07-18",
-//         progress: 0,
-//         status: "Pending",
-//       },
-//     ],
-//   },
-// ];
-
-const dayWidth = 80;
 
 export default function PODetail() {
   const dispatch = useDispatch();
@@ -110,10 +47,32 @@ export default function PODetail() {
   console.log("select:", selectedPO);
 
   const [editTask, setEditTask] = useState(null);
-
   console.log("edit:", editTask);
+  const [chartStartDate, setChartStartDate] = useState(new Date());
+  const [chartEndDate, setChartEndDate] = useState(new Date());
+  console.log("chartenddate");
+  const [dayCount, setDayCount] = useState(1);
+  const dayWidth = 80; // Customize this width as needed
 
+  useEffect(() => {
+    const allDates = selectedPO?.recipe?.processes
+      ? selectedPO.recipe.processes.flatMap((p) =>
+          p.start && p.end ? [new Date(p.start), new Date(p.end)] : []
+        )
+      : [];
 
+    const start =
+      Array.isArray(allDates) && allDates.length ? min(allDates) : new Date();
+    const maxNaturalEnd =
+      Array.isArray(allDates) && allDates.length ? max(allDates) : start;
+
+    const minEnd = addDays(start, 19); // minimum 20-day window
+    const end = maxNaturalEnd > minEnd ? maxNaturalEnd : minEnd;
+
+    setChartStartDate(start);
+    setChartEndDate(end);
+    setDayCount(differenceInCalendarDays(end, start) + 1);
+  }, [selectedPO]);
   const filteredPOs = poDetails.filter((po) => {
     const searchText = filters.search.toLowerCase();
 
@@ -139,7 +98,6 @@ export default function PODetail() {
     }));
   };
 
-
   const statusDot = (status) => {
     if (status === "Completed") return "🟢";
     if (status === "In Progress") return "🟡";
@@ -151,22 +109,19 @@ export default function PODetail() {
     return isNaN(date) ? "Invalid date" : format(date, formatStr);
   };
 
-  const allProcessDates = selectedPO?.recipe?.processes?.flatMap((p) => [
-    new Date(p.start),
-    new Date(p.end),
-  ]);
+  // const allProcessDates = selectedPO?.recipe?.processes?.flatMap((p) => [
+  //   new Date(p.start),
+  //   new Date(p.end),
+  // ]);
 
-  const chartStartDate = allProcessDates?.length
-    ? min(allProcessDates)
-    : new Date(); // fallback to today
+  // const chartStartDate = allProcessDates?.length
+  //   ? min(allProcessDates)
+  //   : new Date(); // fallback to today
 
-  const chartEndDate = allProcessDates?.length
-    ? max(allProcessDates)
-    : new Date(); // fallback to today
-
-  const dayCount =
-    Math.ceil((chartEndDate - chartStartDate) / (1000 * 60 * 60 * 24)) + 1;
-
+  // const chartEndDate = allProcessDates?.length
+  //   ? max(allProcessDates)
+  //   : new Date(); // fallback to today
+  // const dayCount = differenceInCalendarDays(chartEndDate, chartStartDate) + 1;
 
   const handleSaveEdit = async () => {
     if (!editTask?._id || !selectedPO?._id) {
@@ -189,7 +144,7 @@ export default function PODetail() {
         itemId: selectedPO?._id,
         processId: editTask?.processId?._id,
         startDateTime: editTask?.start,
-        endDateTime: editTask?.end
+        endDateTime: editTask?.end,
       });
       console.log("✅ Backend Response:", response);
       toast.success(response.message || "Process updated");
@@ -197,13 +152,12 @@ export default function PODetail() {
       const updatedProcesses = selectedPO.processes.map((p) =>
         p._id === editTask._id
           ? {
-            ...p,
-            startDateTime: editTask.start,
-            endDateTime: editTask.end,
-          }
+              ...p,
+              startDateTime: editTask.start,
+              endDateTime: editTask.end,
+            }
           : p
       );
-
 
       setSelectedPO((prev) => ({
         ...prev,
@@ -216,7 +170,29 @@ export default function PODetail() {
       toast.error(err || "Update failed");
     }
   };
+  const chartStartsDate = selectedPO?.startDate
+    ? new Date(selectedPO.startDate)
+    : new Date();
 
+  const chartEndsDate = selectedPO?.estimatedEndDate
+    ? new Date(selectedPO.estimatedEndDate)
+    : new Date();
+  const headers = [];
+  for (let d = chartStartsDate; d <= chartEndsDate; d = addDays(d, 1)) {
+    headers.push(new Date(d)); // Keep raw Date f
+    // or formatting in JSX
+  }
+  const allChartDates =
+    selectedPO && selectedPO.startDate && selectedPO.estimatedEndDate
+      ? eachDayOfInterval({
+          start: new Date(selectedPO.startDate),
+          end: new Date(selectedPO.estimatedEndDate),
+        })
+      : [];
+  const today = new Date();
+  const todayIndex = allChartDates.findIndex(
+    (d) => format(d, "yyyy-MM-dd") === format(today, "yyyy-MM-dd")
+  );
 
   return (
     <div className="p-4 space-y-6 max-w-screen">
@@ -356,16 +332,42 @@ export default function PODetail() {
                 <div
                   key={s.label}
                   onClick={() => setFilters({ ...filters, status: s.label })}
-                  className={`cursor-pointer select-none ${filters.status === s.label
-                    ? "text-blue-600 font-semibold underline"
-                    : "text-gray-600 hover:text-black"
-                    }`}
+                  className={`cursor-pointer select-none ${
+                    filters.status === s.label
+                      ? "text-blue-600 font-semibold underline"
+                      : "text-gray-600 hover:text-black"
+                  }`}
                 >
                   <span className="mr-1">{s.icon}</span>
                   {s.label}
                 </div>
               ))}
             </div>
+            {selectedPO && (
+              <div className="flex justify-between items-center text-sm text-gray-600 mb-2 px-2">
+                <div className="flex items-center gap-2">
+                  <FaCalendarAlt className="text-gray-400" />
+                  <p>
+                    <strong>PO Created:</strong>{" "}
+                    {selectedPO.startDate
+                      ? format(new Date(selectedPO.startDate), "dd MMM yyyy")
+                      : "N/A"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <FaClock className="text-gray-400" />
+                  <p>
+                    <strong>Delivered (Est.):</strong>{" "}
+                    {selectedPO.estimatedEndDate
+                      ? format(
+                          new Date(selectedPO.estimatedEndDate),
+                          "dd MMM yyyy"
+                        )
+                      : "N/A"}
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="overflow-x-auto">
               <div className="min-w-[240px]">
                 {/* Timeline Header: Start - End Date */}
@@ -374,173 +376,201 @@ export default function PODetail() {
                     className="text-center border-r"
                     style={{ width: `${14 * dayWidth}px` }}
                   >
-                    {format(chartStartDate, "MMM dd")} -{" "}
-                    {format(
-                      new Date(chartStartDate.getTime() + 14 * 86400000),
-                      "MMM dd, yyyy"
-                    )}
+                    {selectedPO.startDate
+                      ? format(new Date(selectedPO.startDate), "dd MMM yyyy")
+                      : "N/A"}{" "}
+                    -{" "}
+                    {selectedPO.estimatedEndDate
+                      ? format(
+                          new Date(selectedPO.estimatedEndDate),
+                          "dd MMM yyyy"
+                        )
+                      : "N/A"}
                   </div>
                 </div>
 
-                {/* Daily Dates Row */}
-                <div className="flex text-sm font-semibold bg-gray-100 border-b sticky top-0 z-10">
-                  <div className="w-40 bg-gray-100 border-r px-2 py-1 sticky left-0 z-10">
-                    Task Name
-                  </div>
-                  {Array.from({ length: dayCount }).map((_, i) => {
-                    const date = new Date(chartStartDate);
-                    date.setDate(date.getDate() + i);
-                    const prevDate = new Date(chartStartDate);
-                    prevDate.setDate(prevDate.getDate() + i - 1);
-                    const isNewMonth =
-                      i === 0 || date.getMonth() !== prevDate.getMonth();
-                    return isNewMonth ? (
-                      <div
-                        key={`month-${i}`}
-                        className="text-center border-r bg-gray-200 py-1"
-                        style={{ width: `${dayWidth}px` }}
-                      >
-                        {format(date, "MMMM yyyy")}
-                      </div>
-                    ) : (
-                      <div
-                        key={`month-${i}`}
-                        style={{ width: `${dayWidth}px` }}
-                      />
-                    );
-                  })}
-                </div>
-
-                {/* Daily Header */}
-                <div className="flex border-b text-xs bg-gray-50">
-                  <div className="w-40 bg-gray-50 border-r px-2 py-1 font-medium sticky left-0 z-10"></div>
-                  {Array.from({ length: dayCount }).map((_, i) => {
-                    const date = new Date(chartStartDate);
-                    date.setDate(date.getDate() + i);
-                    return (
-                      <div
-                        key={i}
-                        className={`w-[${dayWidth}px] text-center border-r py-1 ${isToday(date) ? "bg-yellow-200 font-semibold" : ""
-                          }`}
-                      >
-                        {format(date, "MMM dd")}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {selectedPO && (
-                  <div className="flex justify-between items-center text-sm text-gray-600 mb-2 px-2">
-                    <div className="flex items-center gap-2">
-                      <FaCalendarAlt className="text-gray-400" />
-                      <p>
-                        <strong>PO Created:</strong>{" "}
-                        {selectedPO.startDate
-                          ? format(
-                            new Date(selectedPO.startDate),
-                            "dd MMM yyyy"
-                          )
-                          : "N/A"}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <FaClock className="text-gray-400" />
-                      <p>
-                        <strong>Delivered (Est.):</strong>{" "}
-                        {selectedPO.estimatedEndDate
-                          ? format(
-                            new Date(selectedPO.estimatedEndDate),
-                            "dd MMM yyyy"
-                          )
-                          : "N/A"}
-                      </p>
-                    </div>
-                  </div>
-                )}
                 {/* Tasks */}
-                {selectedPO?.processes?.length > 0 &&
-                  selectedPO.processes
-                    .filter(
-                      (p) =>
-                        filters.status === "All" ||
-                        p.processId.status === filters.status
-                    )
-                    .map((p) => {
-                      const process = p.processId;
-
-                      const startIndex =
-                        (new Date(p.startDateTime).getTime() - chartStartDate.getTime()) /
-                        (1000 * 60 * 60 * 24);
-
-                      const duration =
-                        (new Date(p.endDateTime).getTime() - new Date(p.startDateTime).getTime()) /
-                        (1000 * 60 * 60 * 24) +
-                        1;
-
-                      return (
-                        <div
-                          key={p._id}
-                          className="flex items-center h-12 border-b relative"
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th
+                          className="w-48 sticky left-0 bg-gray-100 z-10 text-left px-2 py-2 border-r"
+                          rowSpan={2}
                         >
-                          {/* Process Name + Status Dot */}
-                          <div className="absolute left-0 w-40 pl-2 text-sm font-medium text-gray-700">
-                            <span className="mr-1">
-                              {statusDot(process.status)}
-                            </span>
-                            {process.name}
-                          </div>
+                          Task Name
+                        </th>
+                        <th
+                          className="text-center px-2 py-2 border-r bg-gray-100 font-semibold"
+                          colSpan={allChartDates.length}
+                        >
+                          {selectedPO.startDate &&
+                          selectedPO.estimatedEndDate ? (
+                            <>
+                              {format(
+                                new Date(selectedPO.startDate),
+                                "dd MMM yyyy"
+                              )}{" "}
+                              –{" "}
+                              {format(
+                                new Date(selectedPO.estimatedEndDate),
+                                "dd MMM yyyy"
+                              )}
+                            </>
+                          ) : (
+                            "Timeline"
+                          )}
+                        </th>
+                      </tr>
 
-                          {/* Bar */}
-                          <div className="flex-1 ml-40 flex relative">
-                            <div
-                              className="relative group"
-                              style={{
-                                marginLeft: `${startIndex * dayWidth}px`,
-                              }}
-                            >
-                              <div
-                                className="h-6 bg-gray-300 rounded overflow-hidden cursor-pointer relative hover:opacity-90"
-                                style={{ width: `${duration * dayWidth}px` }}
+                      {/* Row 2: All Dates */}
+                      <tr className="bg-gray-100">
+                        {allChartDates.map((date, idx) => (
+                          <th
+                            key={idx}
+                            className={`text-xs px-2 py-1 border-r text-center whitespace-nowrap ${
+                              isToday(date) ? "bg-yellow-100 font-bold" : ""
+                            }`}
+                            style={{ minWidth: `${dayWidth}px` }}
+                          >
+                            {format(new Date(date), "dd MMM")}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {selectedPO?.processes
+                        ?.filter(
+                          (p) =>
+                            filters.status === "All" ||
+                            p.processId.status === filters.status
+                        )
+                        .map((p, idx) => {
+                          const process = p.processId;
+                          const start = new Date(p.startDateTime);
+                          const end = new Date(p.endDateTime);
+                          const startIndex = allChartDates.findIndex((date) =>
+                            isSameDay(start, date)
+                          );
+                          const endIndex = allChartDates.findIndex((date) =>
+                            isSameDay(end, date)
+                          );
+                          const today = new Date();
+
+                          let barColor = "bg-gray-400"; // default
+                          if (end < today)
+                            barColor = "bg-green-600"; // Completed
+                          else if (start <= today && end >= today)
+                            barColor = "bg-yellow-500"; // In Progress
+
+                          return (
+                            <tr key={p._id} className="h-10 border-t relative">
+                              {/* Sticky Task Name Column */}
+                              {/* <td className="sticky left-0 bg-white border-r px-2 z-10 text-sm font-medium whitespace-nowrap" onClick={() =>
+                                          setEditTask({
+                                            ...p,
+                                            name: process.name,
+                                            start: p.startDateTime,
+                                            end: p.endDateTime,
+                                          })
+                                        }>
+                                <span className="mr-1">
+                                  {statusDot(process.status)}
+                                </span>
+                                {process.name}
+                              </td> */}
+
+                              <td
+                                className="sticky left-0 bg-white border-r px-2 z-10 text-sm font-medium whitespace-nowrap group cursor-pointer hover:bg-blue-50 transition"
                                 onClick={() =>
                                   setEditTask({
                                     ...p,
-                                    name: p.processId.name,
+                                    name: process.name,
                                     start: p.startDateTime,
                                     end: p.endDateTime,
                                   })
                                 }
                               >
-                                {/* Progress Fill */}
-                                <div
-                                  className={`h-full text-white text-xs flex items-center justify-center transition ${process.status === "Completed"
-                                    ? "bg-green-600"
-                                    : process.status === "In Progress"
-                                      ? "bg-yellow-500"
-                                      : "bg-gray-400"
-                                    }`}
-                                  style={{ width: `${process.progress || 0}%` }}
-                                >
-                                  {process.progress || 0}%
-                                </div>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-1">
+                                    <span className="mr-1">
+                                      {statusDot(process.status)}
+                                    </span>
+                                    <span className="group-hover:text-blue-600">
+                                      {process.name}
+                                    </span>
+                                  </div>
 
-                                {/* Tooltip */}
-                                <div className="absolute opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 group-hover:flex flex-col bg-black text-white text-xs px-3 py-2 rounded shadow-lg z-50 whitespace-nowrap top-full mt-1 left-1/2 -translate-x-1/2 transition-all duration-200">
-                                  <div className="font-semibold">
-                                    {process.name}
-                                  </div>
-                                  <div>
-                                    {duration} day{duration > 1 ? "s" : ""}
-                                  </div>
-                                  <div>
-                                    {safeFormat(p.startDateTime, "MMM dd")} – {safeFormat(p.endDateTime, "MMM dd")}
-                                  </div>
+                                  {/* Edit Icon shows only on hover */}
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 group-hover:text-blue-600 transition duration-200"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M15.232 5.232l3.536 3.536M9 13l6-6m2 2l-6 6H9v-2z"
+                                    />
+                                  </svg>
                                 </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                              </td>
+
+                              {/* Date Columns with Bar */}
+                              {allChartDates.map((_, dayIdx) => {
+                                const isInBar =
+                                  dayIdx >= startIndex && dayIdx <= endIndex;
+
+                                return (
+                                  <td
+                                    key={dayIdx}
+                                    className="relative border-r"
+                                    style={{ minWidth: `${dayWidth}px` }}
+                                  >
+                                    {isInBar && (
+                                      <div
+                                        className={`h-6 ${barColor} rounded cursor-pointer hover:opacity-90 group transition-all duration-200`}
+                                        // onClick={() =>
+                                        //   setEditTask({
+                                        //     ...p,
+                                        //     name: process.name,
+                                        //     start: p.startDateTime,
+                                        //     end: p.endDateTime,
+                                        //   })
+                                        // }
+                                      >
+                                        {/* Tooltip */}
+                                        <div className="absolute opacity-0 group-hover:opacity-100 bg-black text-white text-xs px-3 py-2 rounded shadow-lg whitespace-nowrap z-50 -top-10 left-1/2 transform -translate-x-1/2 transition-all duration-200 pointer-events-none">
+                                          <div className="font-semibold">
+                                            {process.name}
+                                          </div>
+                                          <div>
+                                            {safeFormat(
+                                              p.startDateTime,
+                                              "dd MMM"
+                                            )}{" "}
+                                            –{" "}
+                                            {safeFormat(
+                                              p.endDateTime,
+                                              "dd MMM"
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
@@ -583,7 +613,6 @@ export default function PODetail() {
                       Save
                     </button>
                   </div>
-
                 </div>
               </div>
             )}
