@@ -56,10 +56,6 @@ export const fetchProductupdate = createAsyncThunk(
 export const updateProcessItem = createAsyncThunk(
   "product/updateProcessItem",
   async ({ itemId, processId, updateItemData }, { rejectWithValue }) => {
-    console.log(itemId);
-    console.log(processId);
-    console.log(updateItemData);
-    
     try {
       const response = await axiosConfig.put(
         `/item/${itemId}/process/${processId}`,
