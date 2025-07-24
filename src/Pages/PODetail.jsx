@@ -200,7 +200,7 @@ export default function PODetail() {
 
 
   return (
-    <div className="p-2 space-y-4 max-w-full text-sm sm:text-xs">
+    <div className="p-2 sm:p-4 space-y-4 max-w-full text-sm sm:text-xs">
       <div className="mb-6">
         <h1 className="font-semibold text-xl text-center text-gray-800">
           Production Order Tracker
@@ -211,8 +211,8 @@ export default function PODetail() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-5 rounded-md shadow-sm border">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
+      <div className="bg-white p-3 sm:p-5 rounded-md shadow-sm border">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4 mb-6">
           <div className="col-span-1 sm:col-span-2">
             <label className=" text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
               <span className="text-blue-500 text-base">
@@ -291,8 +291,8 @@ export default function PODetail() {
 
       {/* Gantt Chart */}
       {selectedPO && (
-        <div className="bg-white p-4 rounded-md shadow-md border">
-          <h2 className="text-2xl font-bold mt-6 mb-2 flex items-center gap-2 ">
+        <div className="bg-white p-2 sm:p-4 rounded-md shadow-md border">
+          <h2 className="text-xl sm:text-2xl font-bold mt-6 mb-2 flex items-center gap-2 ">
             <FiPackage className="w-5 h-5 text-blue-600" />
             Production Order: {selectedPO.PONumber}
           </h2>
@@ -325,11 +325,11 @@ export default function PODetail() {
 
           {/* Chart Table */}
           <div className="overflow-x-auto">
-            <table className="min-w-full border">
+            <table className="min-w-full border text-xs sm:text-sm">
               <thead>
                 <tr className="bg-gray-100">
                   <th
-                    className="w-48 sticky left-0 bg-gray-100 z-10 text-left px-2 py-2 border-r"
+                    className="w-32 sm:w-48 sticky left-0 bg-gray-100 z-10 text-left px-2 py-2 border-r"
                     rowSpan={2}
                   >
                     Task Name
@@ -351,7 +351,7 @@ export default function PODetail() {
                         ref={isTodayCol ? todayRef : null}
                         className={`text-[10px] px-1 py-1 border-r text-center whitespace-nowrap ${isTodayCol ? "bg-blue-200 font-bold" : ""
                           }`}
-                        style={{ minWidth: `${dayWidth}px` }}
+                        style={{ minWidth: `40px`, maxWidth: `60px` }}
                       >
                         {format(date, "dd MMM")}
                       </th>

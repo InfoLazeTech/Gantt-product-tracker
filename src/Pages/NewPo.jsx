@@ -87,8 +87,8 @@ const ProductionOrderForm = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-4 pb-24">
-      <div className="w-full max-w-2xl bg-white rounded-xl shadow border border-slate-300 p-0">
+    <div className="min-h-screen flex items-center justify-center py-2 sm:py-4 pb-24">
+      <div className="w-full max-w-2xl bg-white rounded-xl shadow border border-slate-300 p-2 sm:p-4">
         <div className="px-4 pt-4 pb-2 border-b border-slate-100 text-center">
           <h2 className="text-base font-bold text-slate-900 flex items-center justify-center gap-2">
             <FaClipboardList className="text-sky-400" />
@@ -98,13 +98,13 @@ const ProductionOrderForm = () => {
             Start tracking your manufacturing process efficiently.
           </p>
         </div>
-        <form className="px-4 py-4 space-y-6" onSubmit={handleCreateProduct}>
+        <form className="px-0 sm:px-4 py-4 space-y-6" onSubmit={handleCreateProduct}>
           {/* Order Details */}
           <div>
             <h3 className="text-xs font-semibold text-slate-600 mb-1 uppercase tracking-wide">
               Order Details
             </h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="poNumber" className="block text-xs text-slate-500 font-medium mb-1">
                   PO Number
@@ -146,7 +146,7 @@ const ProductionOrderForm = () => {
             <h3 className="text-xs font-semibold text-slate-600 mb-1 uppercase tracking-wide">
               Schedule
             </h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="startDate" className="block text-xs text-slate-500 font-medium mb-1">
                   Start Date
