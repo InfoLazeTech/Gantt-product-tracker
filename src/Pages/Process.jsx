@@ -9,10 +9,11 @@ import {
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FaEdit, FaTrash } from "react-icons/fa";
+import FullPageLoader from "../components/Loader/Loader";
 
 export default function Process() {
   const dispatch = useDispatch();
-  const { process } = useSelector((state) => state.process);
+  const { process, loading } = useSelector((state) => state.process);
   const [showModal, setShowModal] = useState(false);
   const [processName, setProcessName] = useState("");
   const [description, setDescription] = useState("");
@@ -120,53 +121,65 @@ export default function Process() {
               <th className="px-2 py-2 border-b">Actions</th>
             </tr>
           </thead>
-          <tbody>
-            {Array.isArray(process.processes) &&
-            process.processes.length > 0 ? (
-              process.processes.map((item, idx) => (
-                <tr
-                  key={item._id || idx}
-                  className="hover:bg-sky-50 text-slate-800 transition-colors text-xs"
-                >
-                  <td className="px-2 py-2 border-b">{idx + 1}</td>
-                  <td className="px-2 py-2 border-b">{item.processId || "-"}</td>
-                  <td className="px-2 py-2 border-b font-semibold text-sky-700">{item.name}</td>
-                  <td className="px-2 py-2 border-b">{item.description}</td>
-                  <td className="px-2 py-2 border-b">{item.day || "-"}</td>
-                  <td className="px-2 py-2 border-b">
-                    <button
-                      className="rounded-full p-1 bg-sky-100 hover:bg-sky-200 transition-colors mr-1"
-                      onClick={() => {
-                        setProcessName(item.name ?? "");
-                        setDescription(item.description ?? "");
-                        setDays(item.day?.toString() ?? "");
-                        setEditId(item.processId);
-                        setIsEditMode(true);
-                        setShowModal(true);
-                      }}
-                    >
-                      <FaEdit className="text-sky-600" size={14} />
-                    </button>
-                    <button
-                      className="rounded-full p-1 bg-pink-100 hover:bg-pink-200 transition-colors"
-                      onClick={() => {
-                        setSelectedProcessId(item.processId);
-                        setShowDeleteConfirm(true);
-                      }}
-                    >
-                      <FaTrash className="text-pink-500" size={14} />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
+          {loading ?
+            (
               <tr>
-                <td colSpan={6} className="text-center py-3 text-slate-400 text-xs">
-                  No process data found.
+                <td colSpan="6">
+                  <div className="flex justify-center items-center">
+                    <FullPageLoader />
+                  </div>
                 </td>
               </tr>
+            ) :
+            (
+              <tbody>
+                {Array.isArray(process.processes) &&
+                  process.processes.length > 0 ? (
+                  process.processes.map((item, idx) => (
+                    <tr
+                      key={item._id || idx}
+                      className="hover:bg-sky-50 text-slate-800 transition-colors text-xs"
+                    >
+                      <td className="px-2 py-2 border-b">{idx + 1}</td>
+                      <td className="px-2 py-2 border-b">{item.processId || "-"}</td>
+                      <td className="px-2 py-2 border-b font-semibold text-sky-700">{item.name}</td>
+                      <td className="px-2 py-2 border-b">{item.description}</td>
+                      <td className="px-2 py-2 border-b">{item.day || "-"}</td>
+                      <td className="px-2 py-2 border-b">
+                        <button
+                          className="rounded-full p-1 bg-sky-100 hover:bg-sky-200 transition-colors mr-1"
+                          onClick={() => {
+                            setProcessName(item.name ?? "");
+                            setDescription(item.description ?? "");
+                            setDays(item.day?.toString() ?? "");
+                            setEditId(item.processId);
+                            setIsEditMode(true);
+                            setShowModal(true);
+                          }}
+                        >
+                          <FaEdit className="text-sky-600" size={14} />
+                        </button>
+                        <button
+                          className="rounded-full p-1 bg-pink-100 hover:bg-pink-200 transition-colors"
+                          onClick={() => {
+                            setSelectedProcessId(item.processId);
+                            setShowDeleteConfirm(true);
+                          }}
+                        >
+                          <FaTrash className="text-pink-500" size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="text-center py-3 text-slate-400 text-xs">
+                      No process data found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
             )}
-          </tbody>
         </table>
       </div>
 

@@ -10,6 +10,7 @@ import { FaEdit, FaTrash } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { fetchProcess } from "../redux/features/processSlice";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import FullPageLoader from "../components/Loader/Loader";
 
 export default function Recipe() {
   const dispatch = useDispatch();
@@ -149,56 +150,68 @@ export default function Recipe() {
               <th className="px-2 py-2 border-b">Action</th>
             </tr>
           </thead>
-          <tbody>
-            {Array.isArray(recipes) && recipes.length > 0 ? (
-              recipes.map((item, idx) => (
-                <tr
-                  key={item._id || idx}
-                  className="hover:bg-sky-50 text-slate-800 transition-colors text-xs"
-                >
-                  <td className="px-2 py-2 border-b">{idx + 1}</td>
-                  <td className="px-2 py-2 border-b">{item.recipeId}</td>
-                  <td className="px-2 py-2 border-b font-semibold text-sky-700">{item.name}</td>
-                  <td className="px-2 py-2 border-b">{item.description}</td>
-                  <td className="px-2 py-2 border-b">
-                    {item.processes?.map((p) => p?.name || p)?.join(" -> ") ||
-                      "No Process"}
-                  </td>
-                  <td className="px-2 py-2 border-b">
-                    <button
-                      className="rounded-full p-1 bg-sky-100 hover:bg-sky-200 transition-colors mr-1"
-                      title="Edit"
-                      onClick={() => {
-                        setIsEditMode(true);
-                        setEditingRecipeId(item._id);
-                        setRecipeName(item.name);
-                        setDescription(item.description);
-                        setSelectedProcesses(item.processes.map((p) => p._id));
-                        setShowModal(true);
-                      }}
-                    >
-                      <FaEdit className="text-sky-600" size={14} />
-                    </button>
-                    <button
-                      className="rounded-full p-1 bg-pink-100 hover:bg-pink-200 transition-colors"
-                      onClick={() => {
-                        setSelectedProcessId(item.recipeId);
-                        setShowDeleteConfirm(true);
-                      }}
-                    >
-                      <FaTrash className="text-pink-400" size={14} />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
+          {loading ?
+            (
               <tr>
-                <td colSpan={6} className="text-center py-3 text-slate-400 text-xs">
-                  No recipe data found.
+                <td colSpan="6">
+                  <div className="flex justify-center items-center">
+                    <FullPageLoader />
+                  </div>
                 </td>
               </tr>
+            ) :
+            (
+              <tbody>
+                {Array.isArray(recipes) && recipes.length > 0 ? (
+                  recipes.map((item, idx) => (
+                    <tr
+                      key={item._id || idx}
+                      className="hover:bg-sky-50 text-slate-800 transition-colors text-xs"
+                    >
+                      <td className="px-2 py-2 border-b">{idx + 1}</td>
+                      <td className="px-2 py-2 border-b">{item.recipeId}</td>
+                      <td className="px-2 py-2 border-b font-semibold text-sky-700">{item.name}</td>
+                      <td className="px-2 py-2 border-b">{item.description}</td>
+                      <td className="px-2 py-2 border-b">
+                        {item.processes?.map((p) => p?.name || p)?.join(" -> ") ||
+                          "No Process"}
+                      </td>
+                      <td className="px-2 py-2 border-b">
+                        <button
+                          className="rounded-full p-1 bg-sky-100 hover:bg-sky-200 transition-colors mr-1"
+                          title="Edit"
+                          onClick={() => {
+                            setIsEditMode(true);
+                            setEditingRecipeId(item._id);
+                            setRecipeName(item.name);
+                            setDescription(item.description);
+                            setSelectedProcesses(item.processes.map((p) => p._id));
+                            setShowModal(true);
+                          }}
+                        >
+                          <FaEdit className="text-sky-600" size={14} />
+                        </button>
+                        <button
+                          className="rounded-full p-1 bg-pink-100 hover:bg-pink-200 transition-colors"
+                          onClick={() => {
+                            setSelectedProcessId(item.recipeId);
+                            setShowDeleteConfirm(true);
+                          }}
+                        >
+                          <FaTrash className="text-pink-400" size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="text-center py-3 text-slate-400 text-xs">
+                      No recipe data found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
             )}
-          </tbody>
         </table>
       </div>
 

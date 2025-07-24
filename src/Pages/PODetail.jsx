@@ -25,10 +25,11 @@ import {
   updateProcessItem,
 } from "../redux/features/productSlice";
 import { toast } from "react-toastify";
+import FullPageLoader from "../components/Loader/Loader";
 
 export default function PODetail() {
   const dispatch = useDispatch();
-  const { poDetails } = useSelector((state) => state.product);
+  const { poDetails, loading } = useSelector((state) => state.product);
 
   const [filters, setFilters] = useState({
     search: "",
@@ -263,24 +264,28 @@ export default function PODetail() {
         </div>
 
         {/* PO List */}
-        <div className="bg-gray-50 mt-10 p-4 rounded border">
-          <h3 className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
-            All Production Orders
-          </h3>
+        {loading ?
+          <div><FullPageLoader /></div> :
+          (
+            <div className="bg-gray-50 mt-10 p-4 rounded border">
+              <h3 className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
+                All Production Orders
+              </h3>
 
-          {/* Scrollable area with max 4 items */}
-          <div className="space-y-2 overflow-y-auto" style={{ maxHeight: "9.5rem" }}>
-            {filteredPOs.map((po) => (
-              <div
-                key={po._id}
-                onClick={() => setSelectedPO(po)}
-                className="p-2 border rounded bg-white text-xs cursor-pointer"
-              >
-                <strong className="text-blue-600">{po.PONumber}</strong> - {po.customerName}
+              {/* Scrollable area with max 4 items */}
+              <div className="space-y-2 overflow-y-auto" style={{ maxHeight: "9.5rem" }}>
+                {filteredPOs.map((po) => (
+                  <div
+                    key={po._id}
+                    onClick={() => setSelectedPO(po)}
+                    className="p-2 border rounded bg-white text-xs cursor-pointer"
+                  >
+                    <strong className="text-blue-600">{po.PONumber}</strong> - {po.customerName}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          )}
 
       </div>
 
@@ -416,10 +421,10 @@ export default function PODetail() {
                             <div className="flex items-center gap-2">
                               <span
                                 className={`text-xs font-semibold px-2 py-0.5 rounded-full ${process.status === "Completed"
-                                    ? "bg-green-100 text-green-700"
-                                    : process.status === "In Progress"
-                                      ? "bg-yellow-100 text-yellow-700"
-                                      : "bg-gray-100 text-gray-600"
+                                  ? "bg-green-100 text-green-700"
+                                  : process.status === "In Progress"
+                                    ? "bg-yellow-100 text-yellow-700"
+                                    : "bg-gray-100 text-gray-600"
                                   }`}
                               >
                                 {process.status}
