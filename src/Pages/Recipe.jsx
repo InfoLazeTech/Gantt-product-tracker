@@ -16,7 +16,7 @@ export default function Recipe() {
   const dispatch = useDispatch();
   const { recipes, loading } = useSelector((state) => state.recipe);
   const { process } = useSelector((state) => state.process);
-  
+
 
   const [showModal, setShowModal] = useState(false);
   const [recipeName, setRecipeName] = useState("");
@@ -193,13 +193,13 @@ export default function Recipe() {
                           <FaEdit className="text-sky-600" size={14} />
                         </button>
                         <button
-                          className="rounded-full p-1 bg-pink-100 hover:bg-pink-200 transition-colors"
+                          className="rounded-full p-1 bg-red-100 hover:bg-red-200 transition-colors"
                           onClick={() => {
                             setSelectedProcessId(item.recipeId);
                             setShowDeleteConfirm(true);
                           }}
                         >
-                          <FaTrash className="text-pink-400" size={14} />
+                          <FaTrash className="text-red-500" size={14} />
                         </button>
                       </td>
                     </tr>
@@ -222,7 +222,7 @@ export default function Recipe() {
           <div className="bg-white rounded-xl shadow w-full max-w-md flex flex-col max-h-[90vh] border border-slate-200">
             <div className="flex justify-between items-center px-4 py-2 border-b">
               <h3 className="text-lg font-bold text-sky-700">
-                <span className="text-pink-500 text-xl font-bold mr-2">
+                <span className="text-red-500 text-xl font-bold mr-2">
                   {isEditMode ? "✎" : "+"}
                 </span>
                 {isEditMode ? "Edit Recipe" : "Create New Recipe"}
@@ -232,7 +232,7 @@ export default function Recipe() {
                   setShowModal(false);
                   resetForm();
                 }}
-                className="text-slate-400 hover:text-pink-500 text-xl font-bold transition-colors"
+                className="text-slate-400 hover:text-red-500 text-xl font-bold transition-colors"
               >
                 ×
               </button>
@@ -277,7 +277,7 @@ export default function Recipe() {
                         value={proc._id}
                         checked={selectedProcesses.includes(proc._id)}
                         onChange={handleCheckboxChange}
-                        className="form-checkbox h-3 w-3 text-pink-500 focus:ring-pink-500"
+                        className="form-checkbox h-3 w-3 text-red-500 focus:ring-red-500"
                       />
                       <span>{proc.name}</span>
                     </label>
@@ -320,7 +320,7 @@ export default function Recipe() {
                                       className="flex items-center justify-between bg-white border border-slate-200 rounded px-2 py-1 shadow-sm hover:shadow-md transition duration-200 ease-in-out cursor-move text-xs"
                                     >
                                       <div className="flex items-center gap-1">
-                                        <span className="text-pink-400 text-base">☰</span>
+                                        <span className="text-red-400 text-base">☰</span>
                                         <span className="text-slate-800 font-medium">
                                           {procObj ? procObj.name : procId}
                                         </span>
@@ -362,7 +362,7 @@ export default function Recipe() {
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center p-2">
           <div className="bg-white rounded-xl shadow w-full max-w-xs p-3 border border-slate-200">
-            <h3 className="text-base font-bold text-pink-500 mb-2">Are you sure you want to delete this recipe?</h3>
+            <h3 className="text-base font-bold text-red-500 mb-2">Are you sure you want to delete this recipe?</h3>
             <div className="flex justify-end space-x-2">
               <button
                 onClick={() => {
@@ -375,7 +375,7 @@ export default function Recipe() {
               </button>
               <button
                 onClick={handleDeleteRecipe}
-                className="bg-pink-500 hover:bg-pink-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors"
+                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors"
               >
                 Delete
               </button>

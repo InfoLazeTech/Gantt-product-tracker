@@ -160,13 +160,13 @@ export default function Process() {
                           <FaEdit className="text-sky-600" size={14} />
                         </button>
                         <button
-                          className="rounded-full p-1 bg-pink-100 hover:bg-pink-200 transition-colors"
+                          className="rounded-full p-1 bg-red-100 hover:bg-red-200 transition-colors"
                           onClick={() => {
                             setSelectedProcessId(item.processId);
                             setShowDeleteConfirm(true);
                           }}
                         >
-                          <FaTrash className="text-pink-500" size={14} />
+                          <FaTrash className="text-red-500" size={14} />
                         </button>
                       </td>
                     </tr>
@@ -191,7 +191,7 @@ export default function Process() {
               <h3 className="text-lg font-bold text-sky-700">{isEditMode ? "Edit Process" : "Add New Process"}</h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-slate-400 hover:text-pink-500 text-xl leading-none font-bold transition-colors"
+                className="text-slate-400 hover:text-red-500 text-xl leading-none font-bold transition-colors"
               >
                 ×
               </button>
@@ -239,7 +239,7 @@ export default function Process() {
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
           <div className="bg-white p-4 rounded-xl w-full max-w-xs shadow-xl space-y-3 border border-slate-200">
-            <h3 className="text-base font-bold text-pink-500">Confirm Deletion</h3>
+            <h3 className="text-base font-bold text-red-500">Confirm Deletion</h3>
             <p className="text-slate-600 text-xs">Are you sure you want to delete this process?</p>
             <div className="flex justify-end space-x-2 pt-2">
               <button
@@ -253,7 +253,7 @@ export default function Process() {
               </button>
               <button
                 onClick={confirmDeleteProcess}
-                className="bg-pink-500 hover:bg-pink-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors"
+                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors"
               >
                 Delete
               </button>

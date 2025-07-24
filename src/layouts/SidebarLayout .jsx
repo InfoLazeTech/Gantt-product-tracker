@@ -25,10 +25,6 @@ const SidebarLayout = () => {
           <h1 className="text-lg sm:text-2xl font-extrabold text-slate-800 tracking-tight drop-shadow-sm">TimeLine-Chart</h1>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
-          <button className="relative text-slate-400 hover:text-sky-500 transition-colors">
-            <FaBell size={22} />
-            <span className="absolute -top-1 -right-1 bg-pink-500 text-white text-xs rounded-full px-1 py-0.5 shadow">3</span>
-          </button>
           <div className="flex items-center gap-1 sm:gap-2">
             <FaUserCircle size={24} className="text-slate-400" />
             <span className="text-slate-700 font-medium text-xs sm:text-sm">Admin</span>
