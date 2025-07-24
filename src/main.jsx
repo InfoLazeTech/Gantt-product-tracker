@@ -15,15 +15,19 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       </PersistGate>
       <ToastContainer
         position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
+        autoClose={2500}
+        hideProgressBar
         newestOnTop
         closeOnClick
-        pauseOnFocusLoss
-        draggable
+        rtl={false}
+        pauseOnFocusLoss={false}
+        draggable={false}
         pauseOnHover
-        theme="colored"
+        theme="light" // or use 'dark' if your app is dark-themed
+        toastClassName="custom-toast"
+        bodyClassName="custom-toast-body"
       />
+
     </Provider>
   </React.StrictMode>
 );
