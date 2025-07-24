@@ -19,11 +19,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         hideProgressBar
         newestOnTop
         closeOnClick
-        rtl={false}
         pauseOnFocusLoss={false}
         draggable={false}
         pauseOnHover
-        theme="light" // or use 'dark' if your app is dark-themed
+        theme="light"
         toastClassName="custom-toast"
         bodyClassName="custom-toast-body"
       />
