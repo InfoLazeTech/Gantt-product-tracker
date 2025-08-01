@@ -1,35 +1,44 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   addDays,
-  differenceInCalendarDays,
+  // differenceInCalendarDays,
   eachDayOfInterval,
   format,
   isSameDay,
   isToday,
-  min,
+  // min,
   max,
 } from "date-fns";
 import { FiPackage } from "react-icons/fi";
 import {
   FaCalendarAlt,
   FaClock,
+  FaEdit,
+  FaGripVertical,
   FaRegClock,
   FaRegEdit,
   FaSearch,
+  FaTrash,
   FaUser,
 } from "react-icons/fa";
 import { LuFactory } from "react-icons/lu";
 import { useDispatch, useSelector } from "react-redux";
 import {
+  deletePo,
   fetchProduct,
+  updatePo,
   updateProcessItem,
 } from "../redux/features/productSlice";
 import { toast } from "react-toastify";
 import FullPageLoader from "../components/Loader/Loader";
+import { fetchRecipe } from "../redux/features/recipeSlice";
+import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 
 export default function PODetail() {
   const dispatch = useDispatch();
   const { poDetails, loading } = useSelector((state) => state.product);
+  console.log("podetails", poDetails);
+  const recipes = useSelector((state) => state.recipe.recipes || []);
 
   const [filters, setFilters] = useState({
     search: "",
@@ -39,6 +48,19 @@ export default function PODetail() {
     recipe: "",
   });
 
+  const [isEdit, setIsEdit] = useState(false);
+  const [formData, setFormData] = useState({
+    itemId: "",
+    PONumber: "",
+    customerName: "",
+    startDate: "",
+    estimatedEndDate: "",
+    recipeId: "",
+    processes: [],
+  });
+
+  const [processes, setProcesses] = useState([]);
+
   const [selectedPO, setSelectedPO] = useState(null);
   const [editTask, setEditTask] = useState(null);
   const [allChartDates, setAllChartDates] = useState([]);
@@ -47,11 +69,15 @@ export default function PODetail() {
     end: "",
   });
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedPOId, setSelectedPOId] = useState(null);
+
   const todayRef = useRef(null);
   const dayWidth = 60;
 
   useEffect(() => {
     dispatch(fetchProduct());
+    dispatch(fetchRecipe());
   }, [dispatch]);
 
   useEffect(() => {
@@ -61,19 +87,22 @@ export default function PODetail() {
     }
 
     const poStart = new Date(selectedPO.startDate);
-    const poEstimateEnd = selectedPO.estimatedEndDate ? new Date(selectedPO.estimatedEndDate) : null;
+    const poEstimateEnd = selectedPO.estimatedEndDate
+      ? new Date(selectedPO.estimatedEndDate)
+      : null;
 
     // Collect all valid process end dates
     const validProcessDates = selectedPO?.processes
-      ?.map(p => p.endDateTime)
+      ?.map((p) => p.endDateTime)
       .filter(Boolean)
-      .map(date => new Date(date))
-      .filter(date => !isNaN(date));
+      .map((date) => new Date(date))
+      .filter((date) => !isNaN(date));
 
     // 1. Default to estimatedEndDate or poStart + 10
-    let chartEnd = poEstimateEnd && !isNaN(poEstimateEnd)
-      ? poEstimateEnd
-      : addDays(poStart, 10);
+    let chartEnd =
+      poEstimateEnd && !isNaN(poEstimateEnd)
+        ? poEstimateEnd
+        : addDays(poStart, 10);
 
     // 2. If any process end date is AFTER estimatedEndDate, use the latest one
     if (validProcessDates.length > 0) {
@@ -90,7 +119,6 @@ export default function PODetail() {
 
     setAllChartDates(dates);
   }, [selectedPO]);
-
 
   useEffect(() => {
     if (todayRef.current) {
@@ -111,7 +139,9 @@ export default function PODetail() {
       // If no search text, use date filters
       const poStart = new Date(po.startDate);
       const poEnd = new Date(po.estimatedEndDate || po.endDate || po.startDate);
-      const filterStart = filters.startDate ? new Date(filters.startDate) : null;
+      const filterStart = filters.startDate
+        ? new Date(filters.startDate)
+        : null;
       const filterEnd = filters.endDate ? new Date(filters.endDate) : null;
 
       const matchesStartDate = !filterStart || poStart >= filterStart;
@@ -120,14 +150,6 @@ export default function PODetail() {
       return matchesStartDate && matchesEndDate;
     }
   });
-
-
-  const statusDot = (status) => {
-    if (status === "Completed") return "🟢";
-    if (status === "In Progress") return "🟡";
-    if (status === "Pending") return "⚪";
-    return "";
-  };
 
   const safeFormat = (dateStr, formatStr) => {
     const date = new Date(dateStr);
@@ -141,7 +163,6 @@ export default function PODetail() {
     }));
   };
 
-
   useEffect(() => {
     if (selectedPO?._id && poDetails.length > 0) {
       const updated = poDetails.find((po) => po._id === selectedPO._id);
@@ -150,6 +171,10 @@ export default function PODetail() {
       }
     }
   }, [poDetails]);
+
+  const handleEdit = (process) => {
+    setEditTask(process);
+  };
 
   const handleSaveEdit = async () => {
     const newStart = new Date(editTask.start);
@@ -196,8 +221,98 @@ export default function PODetail() {
       toast.error(err || "Update failed");
     }
   };
+  const handleEditOrUpdate = async (po = null, isSubmit = false) => {
+    if (!isSubmit && po) {
+      const selectedRecipe = recipes.find((r) => r._id === po.recipeId?._id);
 
+      const fullProcesses = selectedRecipe?.processes || [];
+      const backendProcesses = fullProcesses.map((proc) => ({
+        processId: proc._id,
+      }));
 
+      const updateData = {
+        itemId: po.itemId,
+        PONumber: po.PONumber,
+        customerName: po.customerName,
+        startDate: po.startDate?.slice(0, 10),
+        estimatedEndDate: po.estimatedEndDate?.slice(0, 10),
+        recipeId: po.recipeId?._id || "",
+        processes: backendProcesses,
+      };
+
+      setFormData(updateData); // backend values
+      setProcesses(fullProcesses); // drag display
+      setIsEdit(true); // open modal
+      console.log("Edit mode started:", updateData);
+    }
+
+    if (isSubmit) {
+      if (!formData.recipeId) {
+        toast.error("Please select a recipe before updating.");
+        return;
+      }
+
+      try {
+        await dispatch(
+          updatePo({
+            itemId: formData.itemId,
+            data: {
+              ...formData,
+              processes: processes.map((p) => ({ processId: p._id })),
+            },
+          })
+        ).unwrap();
+        dispatch(fetchProduct());
+        toast.success("PO updated successfully");
+        setIsEdit(false);
+      } catch (err) {
+        toast.error("Update failed: " + err.message);
+      }
+    }
+  };
+
+  const handleDelete = (itemId) => {
+    if (!itemId) return;
+
+    dispatch(deletePo({ itemId }))
+      .unwrap()
+      .then(() => {
+        toast.success("Production Order deleted successfully");
+      })
+      .catch((error) => {
+        console.error("Delete failed:", error);
+        toast.error("Delete failed");
+      })
+      .finally(() => {
+        setShowDeleteConfirm(false);
+        setSelectedPOId(null);
+      });
+  };
+
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+
+    const reordered = Array.from(processes);
+    const [moved] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, moved);
+
+    setProcesses(reordered);
+  };
+
+  const handleRecipeChange = (e) => {
+    const recipeId = e.target.value;
+    const selectedRecipe = recipes.find((r) => r._id === recipeId);
+
+    setFormData((prev) => ({
+      ...prev,
+      recipeId,
+      processes: selectedRecipe
+        ? selectedRecipe.processes.map((p) => ({ processId: p._id }))
+        : [],
+    }));
+
+    setProcesses(selectedRecipe?.processes || []);
+  };
 
   return (
     <div className="p-2 sm:p-4 space-y-4 max-w-full text-sm sm:text-xs">
@@ -264,29 +379,226 @@ export default function PODetail() {
         </div>
 
         {/* PO List */}
-        {loading ?
-          <div><FullPageLoader /></div> :
-          (
-            <div className="bg-gray-50 mt-10 p-4 rounded border">
-              <h3 className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
-                All Production Orders
-              </h3>
+        {loading ? (
+          <div>
+            <FullPageLoader />
+          </div>
+        ) : (
+          <div className="bg-gray-50 mt-10 p-4 rounded border">
+            <h3 className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
+              All Production Orders
+            </h3>
 
-              {/* Scrollable area with max 4 items */}
-              <div className="space-y-2 overflow-y-auto" style={{ maxHeight: "9.5rem" }}>
-                {filteredPOs.map((po) => (
-                  <div
-                    key={po._id}
-                    onClick={() => setSelectedPO(po)}
-                    className="p-2 border rounded bg-white text-xs cursor-pointer"
-                  >
-                    <strong className="text-blue-600">{po.PONumber}</strong> - {po.customerName}
+            {/* Scrollable area with max 4 items */}
+            <div
+              className="space-y-2 overflow-y-auto"
+              style={{ maxHeight: "9.5rem" }}
+            >
+              {filteredPOs.map((po) => (
+                <div
+                  key={po._id}
+                  onClick={() => setSelectedPO(po)}
+                  className="p-2 border rounded bg-white text-xs flex items-center justify-between cursor-pointer"
+                >
+                  {/* <strong className="text-blue-600">{po.PONumber}</strong> -{" "}
+                  {po.customerName} */}
+                  <div onClick={() => setSelectedPO(po)}>
+                    <strong className="text-blue-600">{po.PONumber}</strong> -{" "}
+                    {po.customerName}
                   </div>
-                ))}
+                  <div className="flex items-center space-x-2 text-gray-600">
+                    <button
+                      className="rounded-full p-1 bg-sky-100 hover:bg-sky-200 transition-colors mr-1"
+                      onClick={() => handleEditOrUpdate(po)}
+                    >
+                      <FaEdit className="text-sky-600" size={14} />
+                    </button>
+                    <button
+                      className="rounded-full p-1 bg-red-100 hover:bg-red-200 transition-colors"
+                      onClick={() => {
+                        setSelectedPOId(po.itemId); // or po._id depending on your data
+                        setShowDeleteConfirm(true);
+                      }}
+                    >
+                      <FaTrash className="text-red-500" size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {isEdit && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className="bg-white p-6 rounded-lg w-full max-w-xl shadow-xl border border-gray-200 relative">
+              <h2 className="text-lg font-bold text-sky-600 mb-4">
+                <span className="text-red-500 text-xl font-bold mr-2">
+                  {isEdit ? "✎" : "+"}
+                </span>
+                Edit PO Details
+              </h2>
+              <button
+                onClick={() => setIsEdit(false)}
+                className="absolute top-3 right-3 text-gray-500 hover:text-red-500 text-2xl font-bold focus:outline-none"
+                aria-label="Close"
+              >
+                ×
+              </button>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  name="PONumber"
+                  value={formData.PONumber}
+                  disabled
+                  onChange={(e) =>
+                    setFormData({ ...formData, PONumber: e.target.value })
+                  }
+                  className="border rounded px-2 py-2"
+                />
+                <input
+                  type="text"
+                  name="customerName"
+                  value={formData.customerName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, customerName: e.target.value })
+                  }
+                  className="border rounded px-2 py-2"
+                />
+                <input
+                  type="date"
+                  name="startDate"
+                  value={formData.startDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, startDate: e.target.value })
+                  }
+                  className="border rounded px-2 py-2"
+                />
+                <input
+                  type="date"
+                  name="estimatedEndDate"
+                  value={formData.estimatedEndDate}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      estimatedEndDate: e.target.value,
+                    })
+                  }
+                  className="border rounded px-2 py-2"
+                />
+                <select
+                  name="recipeId"
+                  value={formData.recipeId}
+                  onChange={handleRecipeChange}
+                  className="border rounded px-2 py-2 col-span-2"
+                >
+                  <option value="">-- Select Recipe --</option>
+                  {recipes.length === 0 ? (
+                    <option disabled>No recipes found</option>
+                  ) : (
+                    recipes.map((recipe) => (
+                      <option key={recipe._id} value={recipe._id}>
+                        {recipe.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold text-slate-600 mb-1 uppercase tracking-wide">
+                  Processes
+                </h3>
+                <DragDropContext onDragEnd={handleDragEnd}>
+                  <Droppable droppableId="processes">
+                    {(provided) => (
+                      <div
+                        className="bg-slate-50 border border-dashed border-slate-200 rounded min-h-[34px] flex flex-col gap-1 p-1"
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                      >
+                        {processes.length === 0 ? (
+                          <div className="text-slate-300 text-xs text-center mt-1">
+                            No processes added yet.
+                          </div>
+                        ) : (
+                          processes.map((proc, idx) => (
+                            <Draggable
+                              key={proc._id}
+                              draggableId={proc._id}
+                              index={idx}
+                            >
+                              {(provided, snapshot) => (
+                                <div
+                                  className={`flex items-center gap-2 bg-white rounded border border-slate-100 px-2 py-1 text-xs ${
+                                    snapshot.isDragging ? "shadow-lg" : ""
+                                  }`}
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                >
+                                  <FaGripVertical className="text-slate-300 text-xs" />
+                                  <span className="flex-1 text-slate-700 py-1">
+                                    {proc.name}
+                                  </span>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))
+                        )}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+                <div className="text-xs text-slate-400 mt-1 pl-1">
+                  Select a recipe or add processes manually.
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 mt-6">
+                <button
+                  onClick={() => setIsEdit(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleEditOrUpdate(null, true)}
+                  className="px-4 py-2 bg-sky-500 text-white rounded hover:bg-sky-600"
+                >
+                  Update PO
+                </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center p-2">
+            <div className="bg-white rounded-xl shadow w-full max-w-xs p-3 border border-slate-200">
+              <h3 className="text-base font-bold text-red-500 mb-2">
+                Are you sure you want to delete this recipe?
+              </h3>
+              <div className="flex justify-end space-x-2">
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setSelectedPOId(null);
+                  }}
+                  className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded text-xs transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDelete(selectedPOId)}
+                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Gantt Chart */}
@@ -349,8 +661,9 @@ export default function PODetail() {
                       <th
                         key={idx}
                         ref={isTodayCol ? todayRef : null}
-                        className={`text-[10px] px-1 py-1 border-r text-center whitespace-nowrap ${isTodayCol ? "bg-blue-200 font-bold" : ""
-                          }`}
+                        className={`text-[10px] px-1 py-1 border-r text-center whitespace-nowrap ${
+                          isTodayCol ? "bg-blue-200 font-bold" : ""
+                        }`}
                         style={{ minWidth: `40px`, maxWidth: `60px` }}
                       >
                         {format(date, "dd MMM")}
@@ -388,7 +701,11 @@ export default function PODetail() {
                     let barColor = "bg-gray-400";
                     let status = "Not Started";
 
-                    if (isSameDay(today, startDate) || isSameDay(today, endDate) || (startDate < today && endDate > today)) {
+                    if (
+                      isSameDay(today, startDate) ||
+                      isSameDay(today, endDate) ||
+                      (startDate < today && endDate > today)
+                    ) {
                       // 🟡 Today is inside process range
                       barColor = "bg-yellow-300";
                       status = "In Progress";
@@ -398,15 +715,17 @@ export default function PODetail() {
                       status = "Completed";
                     }
 
-
-
                     return (
                       <tr key={p._id} className="h-10 border-t relative">
                         <td
                           className="sticky left-0 bg-white border-r px-1 z-10 text-xs font-medium whitespace-nowrap group cursor-pointer hover:bg-blue-50 transition"
                           onClick={() => {
-                            const startDate = p.startDateTime ? format(new Date(p.startDateTime), "yyyy-MM-dd") : "";
-                            const endDate = p.endDateTime ? format(new Date(p.endDateTime), "yyyy-MM-dd") : "";
+                            const startDate = p.startDateTime
+                              ? format(new Date(p.startDateTime), "yyyy-MM-dd")
+                              : "";
+                            const endDate = p.endDateTime
+                              ? format(new Date(p.endDateTime), "yyyy-MM-dd")
+                              : "";
 
                             setEditTask({
                               ...p,
@@ -415,17 +734,17 @@ export default function PODetail() {
                               end: endDate,
                             });
                           }}
-
                         >
                           <div className="flex items-center justify-between group-hover:bg-blue-50 px-1 py-1 rounded transition-all duration-200">
                             <div className="flex items-center gap-2">
                               <span
-                                className={`text-xs font-semibold px-2 py-0.5 rounded-full ${process.status === "Completed"
-                                  ? "bg-green-100 text-green-700"
-                                  : process.status === "In Progress"
+                                className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                                  process.status === "Completed"
+                                    ? "bg-green-100 text-green-700"
+                                    : process.status === "In Progress"
                                     ? "bg-yellow-100 text-yellow-700"
                                     : "bg-gray-100 text-gray-600"
-                                  }`}
+                                }`}
                               >
                                 {process.status}
                               </span>
@@ -442,7 +761,6 @@ export default function PODetail() {
                               <FaRegEdit className="text-lg" />
                             </button>
                           </div>
-
                         </td>
                         {allChartDates.map((_, dayIdx) => {
                           const isInBar =
@@ -462,11 +780,7 @@ export default function PODetail() {
                                       {process.name}
                                     </div>
                                     <div>
-                                      {safeFormat(
-                                        p.startDateTime,
-                                        "dd MMM"
-                                      )}{" "}
-                                      –{" "}
+                                      {safeFormat(p.startDateTime, "dd MMM")} –{" "}
                                       {safeFormat(p.endDateTime, "dd MMM")}
                                     </div>
                                   </div>
@@ -501,7 +815,9 @@ export default function PODetail() {
                   className="border p-2 rounded w-full mb-1"
                 />
                 {formErrors.start && (
-                  <p className="text-red-500 text-xs mt-1">{formErrors.start}</p>
+                  <p className="text-red-500 text-xs mt-1">
+                    {formErrors.start}
+                  </p>
                 )}
 
                 {/* End Date */}
@@ -516,7 +832,6 @@ export default function PODetail() {
                 {formErrors.end && (
                   <p className="text-red-500 text-xs mt-1">{formErrors.end}</p>
                 )}
-
 
                 <div className="flex justify-end gap-2">
                   <button

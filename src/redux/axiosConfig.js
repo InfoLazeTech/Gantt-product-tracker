@@ -2,8 +2,8 @@ import axios from "axios";
 import { store } from "./store";
 
 const axiosConfig = axios.create({
-  // baseURL: 'http://localhost:3001/api/',
-  baseURL: "https://gantt-tracker-backend.vercel.app/api/",
+  baseURL: 'http://localhost:3001/api/',
+  // baseURL: "https://gantt-tracker-backend.vercel.app/api/",
   headers: {
     "Content-Type": "application/json",
   },

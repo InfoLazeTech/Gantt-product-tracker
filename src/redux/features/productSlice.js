@@ -71,10 +71,54 @@ export const updateProcessItem = createAsyncThunk(
   }
 );
 
+export const fetchCustomerProduct = createAsyncThunk(
+  "product/fetchCustomerProduct",
+  async ({ PONumber, RefNumber }) => {
+    try {
+      const response = await axiosConfig.get(
+        `/checkItem?PONumber=${PONumber}&RefNumber=${RefNumber}`
+      );
+      return response.data;
+    } catch (error) {
+      throw error.response.data.message || "Something went wrong";
+    }
+  }
+);
+
+// Thunk for updating PO
+export const updatePo = createAsyncThunk(
+  "item/updatePo",
+  async ({ itemId, data }, { rejectWithValue }) => {
+    try {
+      const response = await axiosConfig.put(`/item/${itemId}`, data);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Something went wrong"
+      );
+    }
+  }
+);
+
+export const deletePo = createAsyncThunk(
+  "item/delete",
+  async ({ itemId }, { rejectWithValue }) => {
+    try {
+      const response = await axiosConfig.delete(`/item/${itemId}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Something went wrong"
+      );
+    }
+  }
+);
+
 const productSlice = createSlice({
   name: "product",
   initialState: {
     poDetails: [],
+    checkProduct: [],
     loading: false,
     error: null,
     message: null,
@@ -123,6 +167,50 @@ const productSlice = createSlice({
         toast.success(state.message);
       })
       .addCase(updateProcessItem.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        toast.error(state.error);
+      })
+      .addCase(fetchCustomerProduct.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchCustomerProduct.fulfilled, (state, action) => {
+        state.loading = false;
+        state.checkProduct = action.payload;
+        state.message = action.payload.message;
+        toast.success(state.message);
+      })
+      .addCase(fetchCustomerProduct.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        toast.error(state.error);
+      })
+      .addCase(updatePo.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(updatePo.fulfilled, (state, action) => {
+        state.loading = false;
+        state.message = action.payload.message;
+        toast.success(state.message);
+      })
+      .addCase(updatePo.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        toast.error(state.error);
+      })
+      .addCase(deletePo.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(deletePo.fulfilled, (state, action) => {
+        state.loading = false;
+        state.message = action.payload.message;
+        state.poDetails = state.poDetails.filter(
+          (r) => r.itemId !== action.meta.arg.itemId
+        );
+        toast.success(state.message);
+      })
+
+      .addCase(deletePo.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
         toast.error(state.error);

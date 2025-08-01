@@ -1,215 +1,196 @@
-// import React, { useState } from "react";
-// import { FaSearch, FaCube, FaFileAlt, FaFilter } from "react-icons/fa";
-// import { useNavigate } from "react-router-dom";
-
-// const POFilter = () => {
-//   const [poNumber, setPONumber] = useState("");
-//   const [referenceNumber, setReferenceNumber] = useState("");
-
-//   const navigate = useNavigate();
-
-//   const handleLoginClick = () => {
-//     navigate("/login");
-//   };
-
-//   const handleReset = () => {
-//     setPONumber("");
-//     setReferenceNumber("");
-//   };
-
-//   return (
-//     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-6">
-//       {/* Header */}
-//       <header className="flex items-center justify-between bg-blue-700 text-white px-6 py-4 rounded-md shadow-md mb-6">
-//         <div className="flex items-center gap-3">
-//           <FaFilter className="text-2xl" />
-//           <h1 className="text-xl md:text-2xl font-semibold">PO Filter Panel</h1>
-//         </div>
-//         <button
-//           onClick={handleLoginClick}
-//           className="bg-white text-blue-700 font-semibold px-4 py-2 rounded hover:bg-blue-100 transition"
-//         >
-//           Admin Login
-//         </button>
-//       </header>
-
-//       {/* Filter Card */}
-//       <div className="bg-white shadow-lg rounded-lg p-6 max-w-4xl mx-auto w-full">
-//         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-//           {/* PO Number Input */}
-//           <div>
-//             <label className="flex items-center text-sm font-semibold text-gray-700 mb-1">
-//               <FaCube className="mr-2" /> PO Number
-//             </label>
-//             <input
-//               type="text"
-//               value={poNumber}
-//               onChange={(e) => setPONumber(e.target.value)}
-//               placeholder="e.g., PO-2024-001"
-//               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-//             />
-//           </div>
-
-//           {/* Reference Number Input */}
-//           <div>
-//             <label className="flex items-center text-sm font-semibold text-gray-700 mb-1">
-//               <FaFileAlt className="mr-2" /> Reference Number
-//             </label>
-//             <input
-//               type="text"
-//               value={referenceNumber}
-//               onChange={(e) => setReferenceNumber(e.target.value)}
-//               placeholder="e.g., REF-A001"
-//               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-//             />
-//           </div>
-//         </div>
-
-//         {/* Buttons */}
-//         <div className="flex flex-wrap justify-end gap-4 mt-6">
-//           <button
-//             className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition"
-//           >
-//             <FaSearch /> Search
-//           </button>
-//           <button
-//             onClick={handleReset}
-//             className="border border-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-100 transition"
-//           >
-//             Reset
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default POFilter;
-// imports stay the same
-// src/components/POFilter.jsx
-import React, { useState } from "react";
-import { FaSearch, FaCube } from "react-icons/fa";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  FaSearch,
+  FaCube,
+  FaUser,
+  FaCalendarAlt,
+  FaChartBar,
+} from "react-icons/fa";
 import {
   format,
-  eachDayOfInterval,
-  differenceInCalendarDays,
-  isToday,
   parseISO,
+  eachDayOfInterval,
+  min,
+  max,
+  isValid,
 } from "date-fns";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../redux/features/authSlice";
-import timelineLogo from "../assets/timelineLogo.png"; // ✅ Added logo path
-
-// Dummy PO data
-const poList = [
-  {
-    poNumber: "PO123",
-    referenceNumber: "REF123",
-    customerName: "Customer A",
-    processes: [
-      { id: "p1", name: "Mixing Process" },
-      { id: "p2", name: "Drying Process" },
-    ],
-    recipes: [
-      {
-        id: "r1",
-        name: "Mixing",
-        processId: "p1",
-        startDate: "2025-07-12",
-        endDate: "2025-07-15",
-        status: "Completed",
-      },
-      {
-        id: "r2",
-        name: "Drying",
-        processId: "p2",
-        startDate: "2025-07-16",
-        endDate: "2025-07-23",
-        status: "In Progress",
-      },
-    ],
-  },
-];
+import timelineLogo from "../assets/timelineLogo.png";
+import factory from "../assets/factory.jpeg";
+import { fetchCustomerProduct } from "../redux/features/productSlice";
+import { toast } from "react-toastify";
+import { FiPackage } from "react-icons/fi";
 
 const POFilter = () => {
   const [poNumber, setPONumber] = useState("");
   const [referenceNumber, setReferenceNumber] = useState("");
   const [filteredPOs, setFilteredPOs] = useState([]);
-  const [selectedRecipe, setSelectedRecipe] = useState(null);
-  const [editedStartDate, setEditedStartDate] = useState("");
-  const [editedEndDate, setEditedEndDate] = useState("");
-  const [hoveredRecipe, setHoveredRecipe] = useState(null);
 
   const dispatch = useDispatch();
   const { token } = useSelector((state) => state.auth);
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
+  const { checkProduct } = useSelector((state) => state.product);
+  console.log("checkProduct", checkProduct);
+
+  const didFetchRef = useRef(false);
+  const todayRef = useRef(null);
+  const dayWidth = 85;
+  useEffect(() => {
+    if (todayRef.current) {
+      todayRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center",
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (didFetchRef.current) return;
+    didFetchRef.current = true;
+    setIsAuthChecked(true);
+
+    dispatch(
+      fetchCustomerProduct({ PONumber: "PO-00018", RefNumber: "D29704" })
+    )
+      .unwrap()
+      .then((res) => console.log("Fetched on load:", res))
+      .catch((err) => console.error("Error on load:", err));
+  }, [dispatch]);
 
   const handleSearch = () => {
-    const result = poList.filter(
-      (po) =>
-        po.poNumber.toLowerCase() === poNumber.toLowerCase() &&
-        po.referenceNumber.toLowerCase() === referenceNumber.toLowerCase()
-    );
-    setFilteredPOs(result);
-  };
+    if (!poNumber.trim() || !referenceNumber.trim()) {
+      toast.error("Please enter both PO Number and Reference Number");
+      return;
+    }
 
-  const openEditModal = (recipe) => {
-    setSelectedRecipe(recipe);
-    setEditedStartDate(recipe.startDate);
-    setEditedEndDate(recipe.endDate);
-  };
+    dispatch(
+      fetchCustomerProduct({ PONumber: poNumber, RefNumber: referenceNumber })
+    )
+      .unwrap()
+      .then((data) => {
+        if (
+          data?.PONumber === poNumber &&
+          data?.RefNumber === referenceNumber &&
+          data?.recipeId &&
+          data?.processes?.length > 0
+        ) {
+          const recipeProcesses = data.recipeId?.processes?.map((proc) => {
+            const matchingProcess = data.processes.find(
+              (p) => p._id === proc._id
+            );
+            return {
+              id: proc._id,
+              name: proc.name,
+              startDate:
+                proc.startDateTime ||
+                matchingProcess?.startDate ||
+                data.startDate,
+              endDate:
+                proc.endDateTime ||
+                matchingProcess?.endDate ||
+                data.estimatedEndDate,
+              status: proc.status || matchingProcess?.status || "In Progress",
+              processId: proc._id,
+            };
+          });
 
-  const closeModal = () => {
-    setSelectedRecipe(null);
-    setEditedStartDate("");
-    setEditedEndDate("");
+          setFilteredPOs([
+            {
+              PONumber: data.PONumber,
+              RefNumber: data.RefNumber,
+              customerName: data.customerName,
+              processes: data.processes,
+              recipes: recipeProcesses,
+              recipe: data.recipeId,
+              startDate: data.startDate,
+              estimatedEndDate: data.estimatedEndDate,
+            },
+          ]);
+        } else {
+          toast.error("Invalid PO Number or Reference Number");
+          setFilteredPOs([]);
+        }
+        // Optionally use this if you want to use API result instead of dummy list
+        // setFilteredPOs([data]);
+      })
+      .catch((err) => {
+        console.error("API error:", err);
+        toast.error("Error fetching PO data");
+        setFilteredPOs([]);
+      });
   };
 
   const handleLogout = () => {
     dispatch(logout());
+
     window.location.reload();
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Completed":
-        return "bg-green-500";
-      case "In Progress":
-        return "bg-yellow-400";
-      default:
-        return "bg-gray-400";
-    }
-  };
+  const po = filteredPOs[0];
+
+  const poStart = po?.startDate ? parseISO(po.startDate) : null;
+  const poEnd = po?.estimatedEndDate ? parseISO(po.estimatedEndDate) : null;
+
+  const processDates =
+    po?.processes?.flatMap((p) => {
+      const start = p.startDateTime ? parseISO(p.startDateTime) : null;
+      const end = p.endDateTime ? parseISO(p.endDateTime) : null;
+      return [start, end].filter((d) => isValid(d));
+    }) || [];
+
+  const allDates = [
+    ...(poStart ? [poStart] : []),
+    ...(poEnd ? [poEnd] : []),
+    ...processDates,
+  ];
+
+  const minDate = allDates.length ? min(allDates) : new Date();
+  const maxDate = allDates.length ? max(allDates) : minDate;
+
+  const allDays = eachDayOfInterval({ start: minDate, end: maxDate });
+
+  // console.log("minDate", minDate);
 
   return (
     <>
       {/* Header */}
       <div className="bg-white shadow-md px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <img src={timelineLogo} alt="Logo" className="w-8 h-8" /> {/* ✅ Logo */}
+          <img src={timelineLogo} alt="Logo" className="w-8 h-8" />
           <h1 className="text-xl font-bold text-blue-700">
             Production Order Timeline
           </h1>
         </div>
         <button
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
           onClick={
             token ? handleLogout : () => (window.location.href = "/login")
           }
         >
-          {token ? "Logout" : "Login"}
+          <FaUser />
+          {isAuthChecked ? (token ? "Logout" : "Login") : "Login"}
         </button>
       </div>
 
-      {/* Search Bar */}
-      <div className="w-full px-4 mt-6">
-        <div className="w-full max-w-7xl bg-white rounded-2xl shadow-xl p-6 border border-blue-100 mx-auto mt-6">
-          <div className="flex flex-col md:flex-row justify-between gap-6 items-start md:items-end">
-
-            {/* Left: Input Fields */}
-            <div className="flex flex-col sm:flex-row gap-6 w-full md:w-3/4">
+      {/* Banner Section */}
+      <div className="w-full py-18 px-4 flex items-center justify-center">
+        <div className="relative w-full">
+          <div
+            className="w-full h-[300px] bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${factory})` }}
+          ></div>
+          <div className="absolute left-1/2 -bottom-12 transform -translate-x-1/2 bg-white/70 p-6 rounded-xl max-w-4xl w-full shadow-lg backdrop-blur-md z-10">
+            <h2 className="text-2xl font-bold text-center text-blue-700 mb-6">
+              Search Production Orders
+            </h2>
+            <div className="flex flex-col md:flex-row justify-between gap-6 items-start md:items-end">
               {/* PO Number */}
               <div className="w-full">
-                <label className="text-sm font-semibold text-gray-700 mb-1 block">PO Number</label>
+                <label className="text-sm font-semibold text-gray-700 mb-1 block">
+                  PO Number
+                </label>
                 <div className="relative">
                   <FaSearch className="absolute top-3 left-3 text-gray-400" />
                   <input
@@ -224,7 +205,9 @@ const POFilter = () => {
 
               {/* Reference Number */}
               <div className="w-full">
-                <label className="text-sm font-semibold text-gray-700 mb-1 block">Reference Number</label>
+                <label className="text-sm font-semibold text-gray-700 mb-1 block">
+                  Reference Number
+                </label>
                 <div className="relative">
                   <FaCube className="absolute top-3 left-3 text-gray-400" />
                   <input
@@ -236,265 +219,350 @@ const POFilter = () => {
                   />
                 </div>
               </div>
-            </div>
 
-            {/* Right: Action Buttons */}
-            <div className="flex gap-4 w-full md:w-auto justify-end md:justify-start mt-4 md:mt-0">
-              <button
-                onClick={handleSearch}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-md text-sm shadow-md transition-all duration-200"
-              >
-                Search
-              </button>
-              <button
-                onClick={() => {
-                  setPONumber("");
-                  setReferenceNumber("");
-                  setFilteredPOs([]);
-                }}
-                className="flex items-center gap-2 border border-gray-300 text-gray-700 px-6 py-2 rounded-md text-sm hover:bg-gray-100 shadow-sm transition-all duration-200"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4 4v6h6M20 20v-6h-6M4 20l16-16"
-                  />
-                </svg>
-                Reset
-              </button>
-            </div>
-          </div>
-        </div>
-        {filteredPOs.length > 0 && (
-          <div className="mt-10 px-4 mb-16"> {/* Added bottom margin */}
-
-            {/* PO Summary Table */}
-            <div className="overflow-x-auto">
-              <h2 className="text-lg font-semibold mb-4 text-blue-700">
-                PO Summary Table
-              </h2>
-              <table className="min-w-full bg-white shadow-md rounded-xl overflow-hidden border border-gray-200">
-                <thead>
-                  <tr className="bg-blue-600 text-white text-sm font-semibold">
-                    <th className="px-6 py-3 text-left">PO Number</th>
-                    <th className="px-6 py-3 text-left">Reference Number</th>
-                    <th className="px-6 py-3 text-left">Customer</th>
-                    <th className="px-6 py-3 text-left">Process Name</th>
-                    <th className="px-6 py-3 text-left">Recipe Name</th>
-                    <th className="px-6 py-3 text-left">Start Date</th>
-                    <th className="px-6 py-3 text-left">End Date</th>
-                    <th className="px-6 py-3 text-left">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="text-sm text-gray-800">
-                  {filteredPOs.map((po) =>
-                    po.recipes.map((recipe, index) => {
-                      const process = po.processes.find(p => p.id === recipe.processId);
-                      return (
-                        <tr key={recipe.id} className="border-t hover:bg-gray-100">
-                          {index === 0 && (
-                            <>
-                              <td rowSpan={po.recipes.length} className="px-6 py-3 font-medium">
-                                {po.poNumber}
-                              </td>
-                              <td rowSpan={po.recipes.length} className="px-6 py-3 font-medium">
-                                {po.referenceNumber}
-                              </td>
-                              <td rowSpan={po.recipes.length} className="px-6 py-3 font-medium">
-                                {po.customerName}
-                              </td>
-                            </>
-                          )}
-                          <td className="px-6 py-3">{process?.name || "-"}</td>
-                          <td className="px-6 py-3">{recipe.name}</td>
-                          <td className="px-6 py-3">{recipe.startDate}</td>
-                          <td className="px-6 py-3">{recipe.endDate}</td>
-                          <td className="px-6 py-3">
-                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${recipe.status === "Completed"
-                                ? "bg-green-100 text-green-700"
-                                : recipe.status === "In Progress"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-gray-200 text-gray-600"
-                              }`}>
-                              {recipe.status}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Gap Between Table and Chart */}
-            <div className="my-12" />
-
-            {/* Timeline Chart View */}
-            {filteredPOs.map((po) => {
-              const allDates = po.recipes.flatMap((r) => [
-                parseISO(r.startDate),
-                parseISO(r.endDate),
-              ]);
-              const minDate = new Date(Math.min(...allDates));
-              const maxDate = new Date(Math.max(...allDates));
-              const allDays = eachDayOfInterval({ start: minDate, end: maxDate });
-
-              return (
-                <div key={po.poNumber} className="mb-10 border rounded shadow">
-                  <div className="bg-gray-100 p-3 flex justify-between items-center text-sm font-medium">
-                    <div>Customer: {po.customerName}</div>
-                    <div>Start: {format(minDate, "yyyy-MM-dd")}</div>
-                    <div>Est. End: {format(maxDate, "yyyy-MM-dd")}</div>
-                    <div>
-                      Progress:{" "}
-                      <span className="text-blue-600">
-                        {Math.round(
-                          (po.recipes.filter((r) => r.status === "Completed").length /
-                            po.recipes.length) * 100
-                        )}%
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="text-center bg-blue-100 font-semibold py-2 uppercase text-blue-800">
-                    {format(minDate, "MMMM yyyy")}
-                  </div>
-
-                  <div className="flex border-b bg-gray-50 text-sm">
-                    <div className="w-64 border-r bg-white p-2 font-semibold">
-                      Task
-                    </div>
-                    <div className="flex">
-                      {allDays.map((day, idx) => (
-                        <div
-                          key={idx}
-                          className={`w-24 text-center p-2 ${isToday(day) ? "bg-yellow-200 font-bold" : ""
-                            }`}
-                        >
-                          {format(day, "MMM d")}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {po.processes.map((process) => {
-                    const relatedRecipes = po.recipes.filter(
-                      (r) => r.processId === process.id
-                    );
-
-                    return (
-                      <div
-                        key={process.id}
-                        className="flex items-center border-t hover:bg-gray-50"
-                      >
-                        <div
-                          className="w-64 p-2 font-medium text-blue-700 cursor-pointer"
-                          onClick={() => openEditModal(relatedRecipes[0])}
-                        >
-                          {process.name}
-                        </div>
-                        <div className="relative flex h-10">
-                          {relatedRecipes.map((recipe) => {
-                            const offset = differenceInCalendarDays(
-                              parseISO(recipe.startDate),
-                              minDate
-                            );
-                            const width =
-                              differenceInCalendarDays(
-                                parseISO(recipe.endDate),
-                                parseISO(recipe.startDate)
-                              ) + 1;
-
-                            return (
-                              <div
-                                key={recipe.id}
-                                style={{
-                                  backgroundColor: getStatusColor(recipe.status),
-                                  left: `${offset * 96}px`,
-                                  width: `${width * 96}px`,
-                                }}
-                                className="absolute top-1 h-8 rounded text-white text-xs flex items-center justify-center shadow-md"
-                                onMouseEnter={() => setHoveredRecipe(recipe)}
-                                onMouseLeave={() => setHoveredRecipe(null)}
-                              >
-                                {recipe.name}
-                                {hoveredRecipe?.id === recipe.id && (
-                                  <div className="absolute top-10 left-0 bg-white text-black text-xs p-2 shadow-lg z-50 rounded border w-max">
-                                    <div>Process: {process.name}</div>
-                                    <div>Start: {recipe.startDate}</div>
-                                    <div>End: {recipe.endDate}</div>
-                                    <div>
-                                      Days:{" "}
-                                      {differenceInCalendarDays(
-                                        parseISO(recipe.endDate),
-                                        parseISO(recipe.startDate)
-                                      ) + 1}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-
-        {/* Modal */}
-        {selectedRecipe && (
-          <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-            <div className="bg-white p-6 rounded shadow-md w-full max-w-md">
-              <h2 className="text-xl font-bold mb-4">Edit Recipe Dates</h2>
-              <label className="block mb-2">
-                Start Date:
-                <input
-                  type="date"
-                  className="w-full border p-2 rounded"
-                  value={editedStartDate}
-                  onChange={(e) => setEditedStartDate(e.target.value)}
-                />
-              </label>
-              <label className="block mb-4">
-                End Date:
-                <input
-                  type="date"
-                  className="w-full border p-2 rounded"
-                  value={editedEndDate}
-                  onChange={(e) => setEditedEndDate(e.target.value)}
-                />
-              </label>
-              <div className="flex justify-end">
+              {/* Buttons */}
+              <div className="flex gap-4 w-full md:w-auto justify-end md:justify-start mt-4 md:mt-0">
                 <button
-                  className="bg-gray-300 px-4 py-2 rounded mr-2"
-                  onClick={closeModal}
+                  onClick={handleSearch}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-md text-sm shadow-md transition-all duration-200"
                 >
-                  Cancel
+                  Search
                 </button>
                 <button
-                  className="bg-blue-600 text-white px-4 py-2 rounded"
-                  onClick={closeModal}
+                  onClick={() => {
+                    setPONumber("");
+                    setReferenceNumber("");
+                    setFilteredPOs([]);
+                  }}
+                  className="flex items-center gap-2 border border-gray-400 text-gray-700 px-6 py-2 rounded-md text-sm hover:bg-gray-100 shadow-sm transition-all duration-200"
                 >
-                  Save
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4 4v6h6M20 20v-6h-6M4 20l16-16"
+                    />
+                  </svg>
+                  Reset
                 </button>
               </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
+
+      {/* Summary Table + Gantt */}
+      {filteredPOs.length > 0 && (
+        <div className="mt-20 px-4 mb-16">
+          {/* Table */}
+          <div className="overflow-x-auto mb-10">
+            <h2 className="text-lg font-semibold mb-4 text-blue-700">
+              PO Summary Table
+            </h2>
+            <div className="bg-white shadow-xl rounded-xl overflow-hidden border border-gray-200">
+              <table className="min-w-full text-sm text-left">
+                <thead className="bg-gradient-to-r from-blue-600 to-blue-500 text-white sticky top-0 z-10">
+                  <tr>
+                    <th className="px-5 py-3 font-semibold">PO Number</th>
+                    <th className="px-5 py-3 font-semibold">
+                      Reference Number
+                    </th>
+                    <th className="px-5 py-3 font-semibold">Customer</th>
+                    <th className="px-5 py-3 font-semibold">Recipe Name</th>
+                    <th className="px-5 py-3 font-semibold">Process Name</th>
+                    <th className="px-5 py-3 font-semibold">Start Date</th>
+                    <th className="px-5 py-3 font-semibold">End Date</th>
+                    <th className="px-5 py-3 font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 bg-white">
+                  {filteredPOs.map((po) => {
+                    const recipeName = po.recipe?.name || "-";
+                    console.log("recipeId:", recipeName);
+                    const processes = po.processes || []
+                    return processes.map((processObj, index) => {
+                      const process = processObj.processId;
+                      const startISO = processObj.startDateTime;
+                      const endISO = processObj.endDateTime;
+
+                      const startDate = startISO
+                        ? format(parseISO(startISO), "yyyy-MM-dd")
+                        : "-";
+                      const endDate = endISO
+                        ? format(parseISO(endISO), "yyyy-MM-dd")
+                        : "-";
+
+                      // ✅ Dynamically determine status
+                      const today = new Date();
+                      const start = startISO ? parseISO(startISO) : null;
+                      const end = endISO ? parseISO(endISO) : null;
+
+                      let status = "Pending";
+                      if (start && end) {
+                        if (today >= start && today <= end) {
+                          status = "In Progress";
+                        } else if (today > end) {
+                          status = "Completed";
+                        }
+                      }
+
+                      return (
+                        <tr
+                          key={processObj._id}
+                          className="hover:bg-gray-50 transition duration-150"
+                        >
+                          {/* Only first row shows PO info */}
+                          {index === 0 ? (
+                            <>
+                              {/* <td className="px-5 py-3 text-gray-800">
+                                {po.PONumber}
+                              </td>
+                              <td className="px-5 py-3 text-gray-800">
+                                {po.RefNumber}
+                              </td>
+                              <td className="px-5 py-3 text-gray-700">
+                                {po.customerName}
+                              </td>
+                              <td className="px-5 py-3 text-gray-700">
+                                {recipeName}
+                              </td> */}
+                              <td
+                                rowSpan={processes.length}
+                                className="px-5 py-3 text-center align-middle text-gray-800 font-medium border-r"
+                              >
+                                {po.PONumber}
+                              </td>
+                              <td
+                                rowSpan={processes.length}
+                                className="px-5 py-3 text-center align-middle text-gray-800 border-r"
+                              >
+                                {po.RefNumber}
+                              </td>
+                              <td
+                                rowSpan={processes.length}
+                                className="px-5 py-3 text-center align-middle text-gray-700 border-r"
+                              >
+                                {po.customerName}
+                              </td>
+                              <td
+                                rowSpan={processes.length}
+                                className="px-5 py-3 text-center align-middle text-gray-700 border-r"
+                              >
+                                {recipeName}
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              {/* <td className="px-5 py-3"></td> */}
+                              {/* <td className="px-5 py-3"></td> */}
+                              {/* <td className="px-5 py-3"></td> */}
+                              {/* <td className="px-5 py-3"></td> */}
+                              
+                            </>
+                          )}
+
+                          {/* Process info always shown */}
+                          <td className="px-5 py-3 text-gray-700">
+                            {process?.name || "-"}
+                          </td>
+                          <td className="px-5 py-3 text-gray-700">
+                            {startDate}
+                          </td>
+                          <td className="px-5 py-3 text-gray-700">{endDate}</td>
+                          <td className="px-5 py-3">
+                            <span
+                              className={`inline-block px-3 py-1 text-xs font-bold rounded-full ${
+                                status === "Completed"
+                                  ? "bg-green-100 text-green-700"
+                                  : status === "In Progress"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-gray-200 text-gray-600"
+                              }`}
+                            >
+                              {status}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Gantt Chart */}
+          <div className="p-4 text-sm">
+            {/* Header */}
+            <div className="bg-gray-100 p-2 sm:p-4 rounded-md shadow-md border">
+              <h2 className="text-xl sm:text-2xl font-bold mt-6 mb-2 flex items-center gap-2 ">
+                <FiPackage className="w-5 h-5 text-blue-600" />
+                Production Order:
+                <span className="text-blue-500"> {po.PONumber}</span>
+              </h2>
+              <div className="flex flex-wrap justify-between w-full text-sm text-gray-600 mb-4">
+                <div className="flex items-center gap-2 text-blue-700 font-bold text-lg">
+                  <FaUser className="text-blue-500" />
+                  <span>Customer: {po.customerName || "-"}</span>
+                </div>
+                <div className="flex items-center gap-6 text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <FaCalendarAlt className="text-blue-500" />
+                    <span>Start: {format(minDate, "dd MMM yyyy")}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <FaCalendarAlt className="text-blue-500" />
+                    <span>Delivery: {format(maxDate, "dd MMM yyyy")}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-green-600 font-semibold">
+                  <FaChartBar className="text-green-500" />
+                  <span>Progress: –</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Gantt Chart Grid */}
+            <div className="w-full overflow-x-auto overflow-y-hidden ">
+              {/* Date Header */}
+              <div
+                className="grid border-b bg-gray-100 text-gray-800 font-semibold"
+                style={{
+                  gridTemplateColumns: `200px repeat(${allDays.length}, ${dayWidth}px)`,
+                  minWidth: `${200 + dayWidth * allDays.length}px`,
+                }}
+              >
+                <div className="sticky left-0 z-20 bg-gray-100 border-r px-4 py-2 flex items-center justify-start">
+                  Task Name
+                </div>
+                <div
+                  className="col-span-full text-center py-2 border-l border-b  font-semibold"
+                  style={{ gridColumn: `2 / span ${allDays.length}` }}
+                >
+                  {format(minDate, "dd MMM yyyy")} –{" "}
+                  {format(maxDate, "dd MMM yyyy")}
+                </div>
+
+                <div className="sticky left-0 z-20 border-r bg-gray-100 " />
+                {allDays.map((date, idx) => {
+                  const isToday =
+                    format(date, "yyyy-MM-dd") ===
+                    format(new Date(), "yyyy-MM-dd");
+                  return (
+                    <div
+                      key={idx}
+                      className={`text-center py-2 px-2 border-l text-xs sm:text-sm transition-all duration-150 ease-in-out ${
+                        isToday
+                          ? "bg-blue-600 text-white font-semibold shadow-md rounded-t-md"
+                          : "bg-gray-50 text-gray-800"
+                      }`}
+                      style={{ width: `${dayWidth}px` }}
+                    >
+                      <div>{format(date, "dd")}</div>
+                      <div className="uppercase text-[10px] tracking-wide">
+                        {format(date, "MMM")}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Process Rows */}
+              {po?.processes?.map((process) => {
+                if (!process.startDateTime || !process.endDateTime) return null;
+
+                const start = parseISO(process.startDateTime);
+                const end = parseISO(process.endDateTime);
+                const startStr = format(
+                  new Date(process.startDateTime),
+                  "yyyy-MM-dd"
+                );
+                const endStr = format(
+                  new Date(process.endDateTime),
+                  "yyyy-MM-dd"
+                );
+
+                const today = format(new Date(), "yyyy-MM-dd");
+
+                return (
+                  <div
+                    key={process._id}
+                    className="grid border-b min-h-[42px] bg-white"
+                    style={{
+                      gridTemplateColumns: `200px repeat(${allDays.length}, ${dayWidth}px)`,
+                      minWidth: `${200 + dayWidth * allDays.length}px`,
+                    }}
+                  >
+                    {/* Process Name */}
+                    <div className="sticky left-0 z-10 bg-white text-blue-700 border-r font-medium px-4 py-2 flex justify-center items-center min-h-[42px] hover:bg-blue-100 transition-colors duration-150"
+>
+                      {process.processId?.name || "-"}
+                    </div>
+
+                    {/* Bar Cells */}
+
+                    {allDays.map((day, idx) => {
+                      const currentDate = format(day, "yyyy-MM-dd");
+
+                      const showBar =
+                        currentDate >= startStr && currentDate <= endStr;
+                      const isStart = currentDate === startStr;
+
+                      // 💡 Calculate status based on date range
+                      let barColor = "bg-gray-400";
+                      if (today >= startStr && today <= endStr) {
+                        barColor = "bg-yellow-400"; // In Progress
+                      } else if (today > endStr) {
+                        barColor = "bg-green-500"; // Completed
+                      }
+
+                      return (
+                        <div
+                          key={idx}
+                          className="relative border-l h-10 flex items-center justify-center bg-white"
+                          style={{ width: `${dayWidth}px` }}
+                        >
+                          {showBar && (
+                            <div className="relative group w-full h-full">
+                              <div
+                                className={`h-6 w-full rounded shadow text-white text-xs px-1 text-center flex items-center justify-center ${barColor}`}
+                              >
+                                {isStart}
+                              </div>
+
+                              {/* Tooltip */}
+                              <div className="absolute left-0 -translate-x-full top-[30%] -translate-y-1/2 z-50 hidden group-hover:block bg-white text-black text-xs p-2 shadow-xl rounded border w-max whitespace-nowrap">
+                                <div>
+                                  <strong>Process:</strong>{" "}
+                                  {process.processId?.name || "-"}
+                                </div>
+                                <div>
+                                  <strong>Start:</strong>{" "}
+                                  {format(start, "dd MMM yyyy")}
+                                </div>
+                                <div>
+                                  <strong>End:</strong>{" "}
+                                  {format(end, "dd MMM yyyy")}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
