@@ -168,6 +168,15 @@ export default function PODetail() {
       const updated = poDetails.find((po) => po._id === selectedPO._id);
       if (updated) {
         setSelectedPO(updated);
+         setProcesses(
+        updated.processes?.map((p) => ({
+          _id: p.processId?._id || p._id,
+          name: p.processId?.name || p.name,
+          startDateTime: p.startDateTime,
+          endDateTime: p.endDateTime,
+          status: p.status || p.processId?.status || "Not Started",
+        })) || []
+      );
       }
     }
   }, [poDetails]);
