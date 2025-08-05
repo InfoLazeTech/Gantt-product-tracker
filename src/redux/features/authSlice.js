@@ -51,7 +51,7 @@ const authSlice = createSlice({
       .addCase(loginAdmin.rejected, (state, action) => {
         state.loading = false;
         state.isAuthenticated = false;
-        state.error = action.payload.message;
+        state.error = action.payload?.message || "Invalid email or password";
         toast.error(state.error);
       });
   },

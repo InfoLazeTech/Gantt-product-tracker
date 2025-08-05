@@ -11,7 +11,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { createProduct } from "../redux/features/productSlice";
 import { fetchRecipe } from "../redux/features/recipeSlice";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
-
+import { useNavigate } from "react-router-dom";
 const ProductionOrderForm = () => {
   const dispatch = useDispatch();
 
@@ -19,7 +19,6 @@ const ProductionOrderForm = () => {
     dispatch(fetchRecipe());
   }, [dispatch]);
   const { recipes } = useSelector((state) => state.recipe);
-
 
   const [formData, setFormData] = useState({
     poNumber: "",
@@ -32,6 +31,13 @@ const ProductionOrderForm = () => {
   const [processes, setProcesses] = useState([]);
 
   const { loading, error, message } = useSelector((state) => state.product);
+  const navigate = useNavigate();
+useEffect(() => {
+  if (message && !loading && !error) {
+    console.log("Navigating to /admin/po-detail");
+    navigate("/admin/po-detail");
+  }
+}, [message, loading, error, navigate]);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -49,11 +55,13 @@ const ProductionOrderForm = () => {
         console.log(recipeProcesses);
       } else {
         setProcesses([]);
-        console.warn("Selected recipe has no processes or is invalid", selectedRecipe);
+        console.warn(
+          "Selected recipe has no processes or is invalid",
+          selectedRecipe
+        );
       }
     }
   };
-
 
   // const handleRemoveProcess = (index) => {
   //   setProcesses(processes.filter((_, i) => i !== index));
@@ -98,7 +106,10 @@ const ProductionOrderForm = () => {
             Start tracking your manufacturing process efficiently.
           </p>
         </div>
-        <form className="px-0 sm:px-4 py-4 space-y-6" onSubmit={handleCreateProduct}>
+        <form
+          className="px-0 sm:px-4 py-4 space-y-6"
+          onSubmit={handleCreateProduct}
+        >
           {/* Order Details */}
           <div>
             <h3 className="text-xs font-semibold text-slate-600 mb-1 uppercase tracking-wide">
@@ -106,7 +117,10 @@ const ProductionOrderForm = () => {
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="poNumber" className="block text-xs text-slate-500 font-medium mb-1">
+                <label
+                  htmlFor="poNumber"
+                  className="block text-xs text-slate-500 font-medium mb-1"
+                >
                   PO Number
                 </label>
                 <div className="relative">
@@ -123,7 +137,10 @@ const ProductionOrderForm = () => {
                 </div>
               </div>
               <div>
-                <label htmlFor="customerName" className="block text-xs text-slate-500 font-medium mb-1">
+                <label
+                  htmlFor="customerName"
+                  className="block text-xs text-slate-500 font-medium mb-1"
+                >
                   Customer Name
                 </label>
                 <div className="relative">
@@ -148,7 +165,10 @@ const ProductionOrderForm = () => {
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="startDate" className="block text-xs text-slate-500 font-medium mb-1">
+                <label
+                  htmlFor="startDate"
+                  className="block text-xs text-slate-500 font-medium mb-1"
+                >
                   Start Date
                 </label>
                 <div className="relative">
@@ -164,7 +184,10 @@ const ProductionOrderForm = () => {
                 </div>
               </div>
               <div>
-                <label htmlFor="estimatedDate" className="block text-xs text-slate-500 font-medium mb-1">
+                <label
+                  htmlFor="estimatedDate"
+                  className="block text-xs text-slate-500 font-medium mb-1"
+                >
                   Estimated Date
                 </label>
                 <div className="relative">
@@ -180,7 +203,10 @@ const ProductionOrderForm = () => {
               </div>
             </div>
             <div className="mt-2">
-              <label htmlFor="recipe" className="block text-xs text-slate-500 font-medium mb-1">
+              <label
+                htmlFor="recipe"
+                className="block text-xs text-slate-500 font-medium mb-1"
+              >
                 Recipe
               </label>
               <div className="relative">
@@ -221,16 +247,24 @@ const ProductionOrderForm = () => {
                       </div>
                     ) : (
                       processes.map((proc, idx) => (
-                        <Draggable key={proc._id} draggableId={proc._id} index={idx}>
+                        <Draggable
+                          key={proc._id}
+                          draggableId={proc._id}
+                          index={idx}
+                        >
                           {(provided, snapshot) => (
                             <div
-                              className={`flex items-center gap-2 bg-white rounded border border-slate-100 px-2 py-1 text-xs ${snapshot.isDragging ? "shadow-lg" : ""}`}
+                              className={`flex items-center gap-2 bg-white rounded border border-slate-100 px-2 py-1 text-xs ${
+                                snapshot.isDragging ? "shadow-lg" : ""
+                              }`}
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
                             >
                               <FaGripVertical className="text-slate-300 text-xs" />
-                              <span className="flex-1 text-slate-700 py-1">{proc.name}</span>
+                              <span className="flex-1 text-slate-700 py-1">
+                                {proc.name}
+                              </span>
                             </div>
                           )}
                         </Draggable>

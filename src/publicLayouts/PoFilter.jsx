@@ -21,21 +21,22 @@ import factory from "../assets/factory.jpeg";
 import { fetchCustomerProduct } from "../redux/features/productSlice";
 import { toast } from "react-toastify";
 import { FiPackage } from "react-icons/fi";
+import FullPageLoader from "../components/Loader/Loader";
 
 const POFilter = () => {
   const [poNumber, setPONumber] = useState("");
   const [referenceNumber, setReferenceNumber] = useState("");
   const [filteredPOs, setFilteredPOs] = useState([]);
-
+  const [dayWidth, setDayWidth] = useState(85);
   const dispatch = useDispatch();
   const { token } = useSelector((state) => state.auth);
-  const [isAuthChecked, setIsAuthChecked] = useState(false);
-  const { checkProduct } = useSelector((state) => state.product);
+
+  const { checkProduct, loading } = useSelector((state) => state.product);
   console.log("checkProduct", checkProduct);
 
   const didFetchRef = useRef(false);
   const todayRef = useRef(null);
-  const dayWidth = 85;
+
   useEffect(() => {
     if (todayRef.current) {
       todayRef.current.scrollIntoView({
@@ -49,7 +50,6 @@ const POFilter = () => {
   useEffect(() => {
     if (didFetchRef.current) return;
     didFetchRef.current = true;
-    setIsAuthChecked(true);
 
     dispatch(
       fetchCustomerProduct({ PONumber: "PO-00018", RefNumber: "D29704" })
@@ -124,8 +124,8 @@ const POFilter = () => {
 
   const handleLogout = () => {
     dispatch(logout());
-
-    window.location.reload();
+    localStorage.removeItem("token");
+    window.location.href = "/login";
   };
 
   const po = filteredPOs[0];
@@ -150,8 +150,38 @@ const POFilter = () => {
   const maxDate = allDates.length ? max(allDates) : minDate;
 
   const allDays = eachDayOfInterval({ start: minDate, end: maxDate });
+  useEffect(() => {
+    const idealDayWidth = 85;
+    const taskColumnWidth = 200;
+    const screenWidth = window.innerWidth - taskColumnWidth;
+
+    const visibleDays = allDays.length;
+
+    if (visibleDays > 0) {
+      const totalChartWidth = visibleDays * idealDayWidth;
+
+      const newWidth =
+        totalChartWidth < screenWidth
+          ? screenWidth / visibleDays
+          : idealDayWidth;
+
+      setDayWidth(newWidth);
+    }
+  }, [allDays]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      dispatch(fetchCustomerProduct());
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [dispatch]);
 
   // console.log("minDate", minDate);
+
+  const isPendingPO = !po?.processes?.some(
+    (p) => p.startDateTime && p.endDateTime
+  );
 
   return (
     <>
@@ -170,7 +200,7 @@ const POFilter = () => {
           }
         >
           <FaUser />
-          {isAuthChecked ? (token ? "Logout" : "Login") : "Login"}
+          {token ? "Logout" : "Login"}
         </button>
       </div>
 
@@ -256,313 +286,331 @@ const POFilter = () => {
           </div>
         </div>
       </div>
-
-      {/* Summary Table + Gantt */}
-      {filteredPOs.length > 0 && (
-        <div className="mt-20 px-4 mb-16">
-          {/* Table */}
-          <div className="overflow-x-auto mb-10">
-            <h2 className="text-lg font-semibold mb-4 text-blue-700">
-              PO Summary Table
-            </h2>
-            <div className="bg-white shadow-xl rounded-xl overflow-hidden border border-gray-200">
-              <table className="min-w-full text-sm text-left">
-                <thead className="bg-gradient-to-r from-blue-600 to-blue-500 text-white sticky top-0 z-10">
-                  <tr>
-                    <th className="px-5 py-3 font-semibold">PO Number</th>
-                    <th className="px-5 py-3 font-semibold">
-                      Reference Number
-                    </th>
-                    <th className="px-5 py-3 font-semibold">Customer</th>
-                    <th className="px-5 py-3 font-semibold">Recipe Name</th>
-                    <th className="px-5 py-3 font-semibold">Process Name</th>
-                    <th className="px-5 py-3 font-semibold">Start Date</th>
-                    <th className="px-5 py-3 font-semibold">End Date</th>
-                    <th className="px-5 py-3 font-semibold">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 bg-white">
-                  {filteredPOs.map((po) => {
-                    const recipeName = po.recipe?.name || "-";
-                    console.log("recipeId:", recipeName);
-                    const processes = po.processes || []
-                    return processes.map((processObj, index) => {
-                      const process = processObj.processId;
-                      const startISO = processObj.startDateTime;
-                      const endISO = processObj.endDateTime;
-
-                      const startDate = startISO
-                        ? format(parseISO(startISO), "yyyy-MM-dd")
-                        : "-";
-                      const endDate = endISO
-                        ? format(parseISO(endISO), "yyyy-MM-dd")
-                        : "-";
-
-                      // ✅ Dynamically determine status
-                      const today = new Date();
-                      const start = startISO ? parseISO(startISO) : null;
-                      const end = endISO ? parseISO(endISO) : null;
-
-                      let status = "Pending";
-                      if (start && end) {
-                        if (today >= start && today <= end) {
-                          status = "In Progress";
-                        } else if (today > end) {
-                          status = "Completed";
-                        }
-                      }
-
-                      return (
-                        <tr
-                          key={processObj._id}
-                          className="hover:bg-gray-50 transition duration-150"
-                        >
-                          {/* Only first row shows PO info */}
-                          {index === 0 ? (
-                            <>
-                              {/* <td className="px-5 py-3 text-gray-800">
-                                {po.PONumber}
-                              </td>
-                              <td className="px-5 py-3 text-gray-800">
-                                {po.RefNumber}
-                              </td>
-                              <td className="px-5 py-3 text-gray-700">
-                                {po.customerName}
-                              </td>
-                              <td className="px-5 py-3 text-gray-700">
-                                {recipeName}
-                              </td> */}
-                              <td
-                                rowSpan={processes.length}
-                                className="px-5 py-3 text-center align-middle text-gray-800 font-medium border-r"
-                              >
-                                {po.PONumber}
-                              </td>
-                              <td
-                                rowSpan={processes.length}
-                                className="px-5 py-3 text-center align-middle text-gray-800 border-r"
-                              >
-                                {po.RefNumber}
-                              </td>
-                              <td
-                                rowSpan={processes.length}
-                                className="px-5 py-3 text-center align-middle text-gray-700 border-r"
-                              >
-                                {po.customerName}
-                              </td>
-                              <td
-                                rowSpan={processes.length}
-                                className="px-5 py-3 text-center align-middle text-gray-700 border-r"
-                              >
-                                {recipeName}
-                              </td>
-                            </>
-                          ) : (
-                            <>
-                              {/* <td className="px-5 py-3"></td> */}
-                              {/* <td className="px-5 py-3"></td> */}
-                              {/* <td className="px-5 py-3"></td> */}
-                              {/* <td className="px-5 py-3"></td> */}
-                              
-                            </>
-                          )}
-
-                          {/* Process info always shown */}
-                          <td className="px-5 py-3 text-gray-700">
-                            {process?.name || "-"}
-                          </td>
-                          <td className="px-5 py-3 text-gray-700">
-                            {startDate}
-                          </td>
-                          <td className="px-5 py-3 text-gray-700">{endDate}</td>
-                          <td className="px-5 py-3">
-                            <span
-                              className={`inline-block px-3 py-1 text-xs font-bold rounded-full ${
-                                status === "Completed"
-                                  ? "bg-green-100 text-green-700"
-                                  : status === "In Progress"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-gray-200 text-gray-600"
-                              }`}
-                            >
-                              {status}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    });
-                  })}
-                </tbody>
-              </table>
-            </div>
+      <div className="mt-40">
+        {loading ? (
+          <div className="flex justify-center items-center min-h-screen">
+            <FullPageLoader />
           </div>
-
-          {/* Gantt Chart */}
-          <div className="p-4 text-sm">
-            {/* Header */}
-            <div className="bg-gray-100 p-2 sm:p-4 rounded-md shadow-md border">
-              <h2 className="text-xl sm:text-2xl font-bold mt-6 mb-2 flex items-center gap-2 ">
-                <FiPackage className="w-5 h-5 text-blue-600" />
-                Production Order:
-                <span className="text-blue-500"> {po.PONumber}</span>
+        ) : filteredPOs.length > 0 ? (
+          <div className="mt-20 px-4 mb-16">
+            {/* Table */}
+            <div className="mb-10">
+              <h2 className="text-lg font-semibold mb-4 text-blue-700">
+                PO Summary Table
               </h2>
-              <div className="flex flex-wrap justify-between w-full text-sm text-gray-600 mb-4">
-                <div className="flex items-center gap-2 text-blue-700 font-bold text-lg">
-                  <FaUser className="text-blue-500" />
-                  <span>Customer: {po.customerName || "-"}</span>
-                </div>
-                <div className="flex items-center gap-6 text-gray-600">
-                  <div className="flex items-center gap-2">
-                    <FaCalendarAlt className="text-blue-500" />
-                    <span>Start: {format(minDate, "dd MMM yyyy")}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FaCalendarAlt className="text-blue-500" />
-                    <span>Delivery: {format(maxDate, "dd MMM yyyy")}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 text-green-600 font-semibold">
-                  <FaChartBar className="text-green-500" />
-                  <span>Progress: –</span>
-                </div>
+              <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-200">
+                <table className="min-w-full text-sm text-left">
+                  <thead className="bg-gradient-to-r from-blue-600 to-blue-500 text-white sticky top-0 z-10">
+                    <tr>
+                      <th className="px-5 py-3 font-semibold">PO Number</th>
+                      <th className="px-5 py-3 font-semibold">
+                        Reference Number
+                      </th>
+                      <th className="px-5 py-3 font-semibold">Customer</th>
+                      <th className="px-5 py-3 font-semibold">Recipe Name</th>
+                      <th className="px-5 py-3 font-semibold">Process Name</th>
+                      <th className="px-5 py-3 font-semibold">Start Date</th>
+                      <th className="px-5 py-3 font-semibold">End Date</th>
+                      <th className="px-5 py-3 font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 bg-white">
+                    {filteredPOs.map((po) => {
+                      const recipeName = po.recipe?.name || "-";
+                      console.log("recipeId:", recipeName);
+                      const processes = po.processes || [];
+                      return processes.map((processObj, index) => {
+                        const process = processObj.processId;
+                        const startISO = processObj.startDateTime;
+                        const endISO = processObj.endDateTime;
+
+                        const startDate = startISO
+                          ? format(parseISO(startISO), "yyyy-MM-dd")
+                          : "-";
+                        const endDate = endISO
+                          ? format(parseISO(endISO), "yyyy-MM-dd")
+                          : "-";
+
+                        // ✅ Dynamically determine status
+                        const today = new Date();
+                        const start = startISO ? parseISO(startISO) : null;
+                        const end = endISO ? parseISO(endISO) : null;
+
+                        let status = "Pending";
+                        if (start && end) {
+                          if (today >= start && today <= end) {
+                            status = "In Progress";
+                          } else if (today > end) {
+                            status = "Completed";
+                          }
+                        }
+
+                        return (
+                          <tr
+                            key={processObj._id}
+                            className="hover:bg-gray-50 transition duration-150"
+                          >
+                            {/* Only first row shows PO info */}
+                            {index === 0 ? (
+                              <>
+                                <td
+                                  rowSpan={processes.length}
+                                  className="px-5 py-3 text-center align-middle text-gray-800 font-medium border-r"
+                                >
+                                  {po.PONumber}
+                                </td>
+                                <td
+                                  rowSpan={processes.length}
+                                  className="px-5 py-3 text-center align-middle text-gray-800 border-r"
+                                >
+                                  {po.RefNumber}
+                                </td>
+                                <td
+                                  rowSpan={processes.length}
+                                  className="px-5 py-3 text-center align-middle text-gray-700 border-r"
+                                >
+                                  {po.customerName}
+                                </td>
+                                <td
+                                  rowSpan={processes.length}
+                                  className="px-5 py-3 text-center align-middle text-gray-700 border-r"
+                                >
+                                  {recipeName}
+                                </td>
+                              </>
+                            ) : (
+                              <>
+                                {/* <td className="px-5 py-3"></td> */}
+                                {/* <td className="px-5 py-3"></td> */}
+                                {/* <td className="px-5 py-3"></td> */}
+                                {/* <td className="px-5 py-3"></td> */}
+                              </>
+                            )}
+
+                            {/* Process info always shown */}
+                            <td className="px-5 py-3 text-gray-700">
+                              {process?.name || "-"}
+                            </td>
+                            <td className="px-5 py-3 text-gray-700">
+                              {startDate}
+                            </td>
+                            <td className="px-5 py-3 text-gray-700">
+                              {endDate}
+                            </td>
+                            <td className="px-5 py-3">
+                              <span
+                                className={`inline-block px-3 py-1 text-xs font-bold rounded-full ${
+                                  status === "Completed"
+                                    ? "bg-green-100 text-green-700"
+                                    : status === "In Progress"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-gray-200 text-gray-600"
+                                }`}
+                              >
+                                {status}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      });
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
 
-            {/* Gantt Chart Grid */}
-            <div className="w-full overflow-x-auto overflow-y-hidden ">
-              {/* Date Header */}
-              <div
-                className="grid border-b bg-gray-100 text-gray-800 font-semibold"
-                style={{
-                  gridTemplateColumns: `200px repeat(${allDays.length}, ${dayWidth}px)`,
-                  minWidth: `${200 + dayWidth * allDays.length}px`,
-                }}
-              >
-                <div className="sticky left-0 z-20 bg-gray-100 border-r px-4 py-2 flex items-center justify-start">
-                  Task Name
+            {/* Gantt Chart */}
+            {/* ⚠️ Pending PO Box */}
+            {isPendingPO && (
+              <div className="flex justify-center w-full">
+                <div className="bg-yellow-100 text-yellow-800 border border-yellow-300 rounded p-4 mb-4 shadow-md text-sm max-w-xl w-full">
+                  <div className="flex items-start gap-2">
+                    <span className="text-lg">⚠️</span>
+                    <div>
+                      <strong className="block mb-1 text-base">
+                        PO Pending
+                      </strong>
+                      <p>
+                        This Production Order is still Pending. Work has not
+                        started yet.
+                      </p>
+                      <p>No processes have a start date assigned.</p>
+                    </div>
+                  </div>
                 </div>
-                <div
-                  className="col-span-full text-center py-2 border-l border-b  font-semibold"
-                  style={{ gridColumn: `2 / span ${allDays.length}` }}
-                >
-                  {format(minDate, "dd MMM yyyy")} –{" "}
-                  {format(maxDate, "dd MMM yyyy")}
-                </div>
-
-                <div className="sticky left-0 z-20 border-r bg-gray-100 " />
-                {allDays.map((date, idx) => {
-                  const isToday =
-                    format(date, "yyyy-MM-dd") ===
-                    format(new Date(), "yyyy-MM-dd");
-                  return (
-                    <div
-                      key={idx}
-                      className={`text-center py-2 px-2 border-l text-xs sm:text-sm transition-all duration-150 ease-in-out ${
-                        isToday
-                          ? "bg-blue-600 text-white font-semibold shadow-md rounded-t-md"
-                          : "bg-gray-50 text-gray-800"
-                      }`}
-                      style={{ width: `${dayWidth}px` }}
-                    >
-                      <div>{format(date, "dd")}</div>
-                      <div className="uppercase text-[10px] tracking-wide">
-                        {format(date, "MMM")}
+              </div>
+            )}
+            {!isPendingPO && (
+              <div className="p-4 text-sm">
+                {/* Header */}
+                <div className="bg-gray-100 p-2 sm:p-4 rounded-md shadow-md border">
+                  <h2 className="text-xl sm:text-2xl font-bold mt-6 mb-2 flex items-center gap-2 ">
+                    <FiPackage className="w-5 h-5 text-blue-600" />
+                    Production Order:
+                    <span className="text-blue-500"> {po.PONumber}</span>
+                  </h2>
+                  <div className="flex flex-wrap justify-between w-full text-sm text-gray-600 mb-4">
+                    <div className="flex items-center gap-2 text-blue-700 font-bold text-lg">
+                      <FaUser className="text-blue-500" />
+                      <span>Customer: {po.customerName || "-"}</span>
+                    </div>
+                    <div className="flex items-center gap-6 text-gray-600">
+                      <div className="flex items-center gap-2">
+                        <FaCalendarAlt className="text-blue-500" />
+                        <span>Start: {format(minDate, "dd MMM yyyy")}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <FaCalendarAlt className="text-blue-500" />
+                        <span>Delivery: {format(maxDate, "dd MMM yyyy")}</span>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                    <div className="flex items-center gap-2 text-green-600 font-semibold">
+                      <FaChartBar className="text-green-500" />
+                      <span>Progress: –</span>
+                    </div>
+                  </div>
+                </div>
 
-              {/* Process Rows */}
-              {po?.processes?.map((process) => {
-                if (!process.startDateTime || !process.endDateTime) return null;
+                {/* Gantt Chart Grid */}
 
-                const start = parseISO(process.startDateTime);
-                const end = parseISO(process.endDateTime);
-                const startStr = format(
-                  new Date(process.startDateTime),
-                  "yyyy-MM-dd"
-                );
-                const endStr = format(
-                  new Date(process.endDateTime),
-                  "yyyy-MM-dd"
-                );
-
-                const today = format(new Date(), "yyyy-MM-dd");
-
-                return (
+                <div className="w-full overflow-x-auto overflow-y-hidden ">
+                  {/* Date Header */}
                   <div
-                    key={process._id}
-                    className="grid border-b min-h-[42px] bg-white"
+                    className="grid border-b bg-gray-100 text-gray-800 font-semibold"
                     style={{
                       gridTemplateColumns: `200px repeat(${allDays.length}, ${dayWidth}px)`,
-                      minWidth: `${200 + dayWidth * allDays.length}px`,
+                      minWidth: `${200 + allDays.length * dayWidth}px`, // ensure full-width or more
                     }}
                   >
-                    {/* Process Name */}
-                    <div className="sticky left-0 z-10 bg-white text-blue-700 border-r font-medium px-4 py-2 flex justify-center items-center min-h-[42px] hover:bg-blue-100 transition-colors duration-150"
->
-                      {process.processId?.name || "-"}
+                    <div className="sticky left-0 z-20 bg-gray-100 border-r px-4 py-2 flex items-center justify-start">
+                      Task Name
+                    </div>
+                    <div
+                      className="col-span-full text-center py-2 border-l border-b  font-semibold"
+                      style={{ gridColumn: `2 / span ${allDays.length}` }}
+                    >
+                      {format(minDate, "dd MMM yyyy")} –{" "}
+                      {format(maxDate, "dd MMM yyyy")}
                     </div>
 
-                    {/* Bar Cells */}
-
-                    {allDays.map((day, idx) => {
-                      const currentDate = format(day, "yyyy-MM-dd");
-
-                      const showBar =
-                        currentDate >= startStr && currentDate <= endStr;
-                      const isStart = currentDate === startStr;
-
-                      // 💡 Calculate status based on date range
-                      let barColor = "bg-gray-400";
-                      if (today >= startStr && today <= endStr) {
-                        barColor = "bg-yellow-400"; // In Progress
-                      } else if (today > endStr) {
-                        barColor = "bg-green-500"; // Completed
-                      }
-
+                    <div className="sticky left-0 z-20 border-r bg-gray-100 " />
+                    {allDays.map((date, idx) => {
+                      const isToday =
+                        format(date, "yyyy-MM-dd") ===
+                        format(new Date(), "yyyy-MM-dd");
                       return (
                         <div
                           key={idx}
-                          className="relative border-l h-10 flex items-center justify-center bg-white"
+                          className={`text-center py-2 px-2 border-l text-xs sm:text-sm transition-all duration-150 ease-in-out ${
+                            isToday
+                              ? "bg-blue-600 text-white font-semibold shadow-md rounded-t-md"
+                              : "bg-gray-50 text-gray-800"
+                          }`}
                           style={{ width: `${dayWidth}px` }}
                         >
-                          {showBar && (
-                            <div className="relative group w-full h-full">
-                              <div
-                                className={`h-6 w-full rounded shadow text-white text-xs px-1 text-center flex items-center justify-center ${barColor}`}
-                              >
-                                {isStart}
-                              </div>
-
-                              {/* Tooltip */}
-                              <div className="absolute left-0 -translate-x-full top-[30%] -translate-y-1/2 z-50 hidden group-hover:block bg-white text-black text-xs p-2 shadow-xl rounded border w-max whitespace-nowrap">
-                                <div>
-                                  <strong>Process:</strong>{" "}
-                                  {process.processId?.name || "-"}
-                                </div>
-                                <div>
-                                  <strong>Start:</strong>{" "}
-                                  {format(start, "dd MMM yyyy")}
-                                </div>
-                                <div>
-                                  <strong>End:</strong>{" "}
-                                  {format(end, "dd MMM yyyy")}
-                                </div>
-                              </div>
-                            </div>
-                          )}
+                          <div>{format(date, "dd")}</div>
+                          <div className="uppercase text-[10px] tracking-wide">
+                            {format(date, "MMM")}
+                          </div>
                         </div>
                       );
                     })}
                   </div>
-                );
-              })}
-            </div>
+
+                  {/* Process Rows */}
+                  {po?.processes?.map((process) => {
+                    const hasDates =
+                      process.startDateTime && process.endDateTime;
+
+                    const start = hasDates
+                      ? parseISO(process.startDateTime)
+                      : null;
+                    const end = hasDates ? parseISO(process.endDateTime) : null;
+                    const startStr = hasDates
+                      ? format(start, "yyyy-MM-dd")
+                      : null;
+                    const endStr = hasDates ? format(end, "yyyy-MM-dd") : null;
+
+                    const today = format(new Date(), "yyyy-MM-dd");
+
+                    return (
+                      <div
+                        key={process._id}
+                        className="grid border-b min-h-[42px] bg-white"
+                        style={{
+                          gridTemplateColumns: `200px repeat(${allDays.length}, ${dayWidth}px)`,
+                          minWidth: `${200 + allDays.length * dayWidth}px`, // ensure full-width or more
+                        }}
+                      >
+                        {/* Process Name */}
+                        <div className="sticky left-0 z-10 bg-white text-blue-700 border-r font-medium px-4 py-2 flex justify-center items-center min-h-[42px] hover:bg-blue-100 transition-colors duration-150">
+                          {process.processId?.name || "-"}
+                        </div>
+
+                        {/* Bar Cells */}
+
+                        {allDays.map((day, idx) => {
+                          const currentDate = format(day, "yyyy-MM-dd");
+
+                          const showBar =
+                            currentDate >= startStr && currentDate <= endStr;
+                          const isStart = currentDate === startStr;
+
+                          // 💡 Calculate status based on date range
+                          let barColor = "bg-gray-400";
+                          if (today >= startStr && today <= endStr) {
+                            barColor = "bg-yellow-400"; // In Progress
+                          } else if (today > endStr) {
+                            barColor = "bg-green-500"; // Completed
+                          }
+
+                          return (
+                            <div
+                              key={idx}
+                              className="relative border-l h-10 flex items-center justify-center bg-white"
+                              style={{ width: `${dayWidth}px` }}
+                            >
+                              {showBar && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <div
+                                    className={`h-6 w-full rounded shadow text-white text-xs px-1 text-center flex items-center justify-center ${barColor}`}
+                                  >
+                                    {isStart}
+                                  </div>
+
+                                  {/* Tooltip */}
+                                  <div className="absolute left-0 -translate-x-full top-[30%] -translate-y-1/2 z-50 hidden group-hover:block bg-white text-black text-xs p-2 shadow-xl rounded border w-max whitespace-nowrap">
+                                    <div>
+                                      <strong>Process:</strong>{" "}
+                                      {process.processId?.name || "-"}
+                                    </div>
+                                    <div>
+                                      <strong>Start:</strong>{" "}
+                                      {format(start, "dd MMM yyyy")}
+                                    </div>
+                                    <div>
+                                      <strong>End:</strong>{" "}
+                                      {format(end, "dd MMM yyyy")}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="text-center text-gray-500 mt-20">
+            No Production Orders Found
+          </div>
+        )}
+      </div>
     </>
   );
 };

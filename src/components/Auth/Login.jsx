@@ -5,21 +5,39 @@ import { loginAdmin } from "../../redux/features/authSlice";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import logo from "../../assets/timelineLogo.png";
-import bg from "../../assets/login.webp"
+import bg from "../../assets/login.webp";
 const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error, token } = useSelector((state) => state.auth);
+  const {  token } = useSelector((state) => state.auth);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [formError, setFormError] = useState();
+  const [loading,setLoading] =useState(false)
+  const [error,setError] =useState()
 
   const handleLogin = async () => {
-    if (email && password) {
-      await dispatch(loginAdmin({ email, password }));
-    }
-  };
+  if (!email || !password) {
+    setFormError("Please fill in both email and password");
+    return;
+  }
+
+  setLoading(true);
+  setFormError("");
+  setError("");
+
+  try {
+    await dispatch(loginAdmin({ email, password })).unwrap(); // .unwrap() to catch rejected promise
+  } catch (err) {
+    // You can customize this message based on the API error structure
+    let errorMessage = err?.message || "Invalid email or password.";
+    setError(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     if (token) {
@@ -29,26 +47,26 @@ const Login = () => {
 
   return (
     <>
-       <div
-      className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center px-4 py-8 relative"
-          style={{ backgroundImage: `url(${bg})` }}
-    >
-      {/* Overlay */}
+      <div
+        className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center px-4 py-8 relative"
+        style={{ backgroundImage: `url(${bg})` }}
+      >
+        {/* Overlay */}
         <div className="absolute inset-0 bg-black bg-opacity-40 backdrop-blur-sm z-0" />
 
-      {/* Login Card */}
-     <div className="relative z-10 p-8 bg-white backdrop-blur-lg rounded-xl shadow-lg max-w-md w-full">
-        <div className="flex items-center justify-center gap-x-3 mb-8">
-          <div className="bg-gradient-to-br from-sky-200 to-blue-200 rounded-full p-3 shadow-md">
-            <img src={logo} alt="logo" className="w-10 h-10" />
+        {/* Login Card */}
+        <div className="relative z-10 p-8 bg-white backdrop-blur-lg rounded-xl shadow-lg max-w-md w-full">
+          <div className="flex items-center justify-center gap-x-3 mb-8">
+            <div className="bg-gradient-to-br from-sky-200 to-blue-200 rounded-full p-3 shadow-md">
+              <img src={logo} alt="logo" className="w-10 h-10" />
+            </div>
+            <h1 className="text-md sm:text-2xl font-extrabold text-slate-800 tracking-tight">
+              TimeLine-Chart
+            </h1>
           </div>
-          <h1 className="text-md sm:text-2xl font-extrabold text-slate-800 tracking-tight">
-            TimeLine-Chart
-          </h1>
-        </div>
-        <h6 className="block text-center antialiased font-sans font-bold text-gray-800 text-base ">
-          Admin Login
-        </h6>
+          <h6 className="block text-center antialiased font-sans font-bold text-gray-800 text-base ">
+            Admin Login
+          </h6>
           <div className="mb-4">
             <label className="block mb-1 text-gray-700">Email</label>
             <input
@@ -84,16 +102,18 @@ const Login = () => {
           >
             {loading ? "Logging in..." : "Login"}
           </button>
-
+          {formError && (
+            <p className="text-red-500 mt-4 text-center">{formError}</p>
+          )}
           {error && <p className="text-red-500 mt-4 text-center">{error}</p>}
           <div className="mt-6 text-center">
-          <button
-            onClick={() => navigate("/")}
-            className="text-sm text-blue-600 hover:underline hover:text-blue-800 transition duration-200"
-          >
-            ← Back to Home
-          </button>
-        </div>
+            <button
+              onClick={() => navigate("/")}
+              className="text-sm text-blue-600 hover:underline hover:text-blue-800 transition duration-200"
+            >
+              ← Back to Home
+            </button>
+          </div>
         </div>
       </div>
     </>
@@ -101,4 +121,3 @@ const Login = () => {
 };
 
 export default Login;
-

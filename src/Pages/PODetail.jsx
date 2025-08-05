@@ -92,7 +92,7 @@ export default function PODetail() {
       : null;
 
     // Collect all valid process end dates
-    const validProcessDates = selectedPO?.processes
+    const validProcessDates = processes
       ?.map((p) => p.endDateTime)
       .filter(Boolean)
       .map((date) => new Date(date))
@@ -118,7 +118,7 @@ export default function PODetail() {
     });
 
     setAllChartDates(dates);
-  }, [selectedPO]);
+  }, [selectedPO, processes]);
 
   useEffect(() => {
     if (todayRef.current) {
@@ -223,12 +223,14 @@ export default function PODetail() {
   };
   const handleEditOrUpdate = async (po = null, isSubmit = false) => {
     if (!isSubmit && po) {
-      const selectedRecipe = recipes.find((r) => r._id === po.recipeId?._id);
-
-      const fullProcesses = selectedRecipe?.processes || [];
-      const backendProcesses = fullProcesses.map((proc) => ({
-        processId: proc._id,
-      }));
+      const fullProcesses =
+        po.processes?.map((p) => ({
+          _id: p.processId?._id || p._id,
+          name: p.processId?.name || p.name,
+          startDateTime: p.startDateTime,
+          endDateTime: p.endDateTime,
+          status: p.status,
+        })) || [];
 
       const updateData = {
         itemId: po.itemId,
@@ -237,12 +239,12 @@ export default function PODetail() {
         startDate: po.startDate?.slice(0, 10),
         estimatedEndDate: po.estimatedEndDate?.slice(0, 10),
         recipeId: po.recipeId?._id || "",
-        processes: backendProcesses,
+        processes: fullProcesses.map((proc) => ({ processId: proc._id })),
       };
 
-      setFormData(updateData); // backend values
-      setProcesses(fullProcesses); // drag display
-      setIsEdit(true); // open modal
+      setFormData(updateData);
+      setProcesses(fullProcesses);
+      setIsEdit(true);
       console.log("Edit mode started:", updateData);
     }
 
@@ -392,7 +394,7 @@ export default function PODetail() {
             {/* Scrollable area with max 4 items */}
             <div
               className="space-y-2 overflow-y-auto"
-              style={{ maxHeight: "9.5rem" }}
+              style={{ maxHeight: "9rem" }}
             >
               {filteredPOs.map((po) => (
                 <div
@@ -400,8 +402,6 @@ export default function PODetail() {
                   onClick={() => setSelectedPO(po)}
                   className="p-2 border rounded bg-white text-xs flex items-center justify-between cursor-pointer"
                 >
-                  {/* <strong className="text-blue-600">{po.PONumber}</strong> -{" "}
-                  {po.customerName} */}
                   <div onClick={() => setSelectedPO(po)}>
                     <strong className="text-blue-600">{po.PONumber}</strong> -{" "}
                     {po.customerName}
