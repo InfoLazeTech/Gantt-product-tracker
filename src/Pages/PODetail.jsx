@@ -637,6 +637,10 @@ export default function PODetail() {
               {safeFormat(selectedPO.estimatedEndDate, "dd MMM yyyy")}
             </div>
             <div className="flex items-center gap-2">
+              <strong>Refernce Number:</strong> 
+               <span className="text-gray-700">{selectedPO?.RefNumber || "N/A"}</span>
+            </div>
+            <div className="flex items-center gap-2">
               <LuFactory />
               <span>
                 <strong>Progress:</strong> {selectedPO.progress}%

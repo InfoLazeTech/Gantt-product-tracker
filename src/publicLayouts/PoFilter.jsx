@@ -314,7 +314,7 @@ const POFilter = () => {
                       <th className="px-5 py-3 font-semibold">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 bg-white">
+                  <tbody className="divide-y divide-gray-100 bg-white" >
                     {filteredPOs.map((po) => {
                       const recipeName = po.recipe?.name || "-";
                       console.log("recipeId:", recipeName);
@@ -348,8 +348,8 @@ const POFilter = () => {
                         return (
                           <tr
                             key={processObj._id}
-                            className="hover:bg-gray-50 transition duration-150"
-                          >
+                            className=" transition duration-150"
+                            >
                             {/* Only first row shows PO info */}
                             {index === 0 ? (
                               <>
