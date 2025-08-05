@@ -536,7 +536,7 @@ const POFilter = () => {
                     return (
                       <div
                         key={process._id}
-                        className="grid border-b min-h-[42px] bg-white"
+                        className=" grid border-b min-h-[42px] bg-white"
                         style={{
                           gridTemplateColumns: `200px repeat(${allDays.length}, ${dayWidth}px)`,
                           minWidth: `${200 + allDays.length * dayWidth}px`, // ensure full-width or more
@@ -571,7 +571,7 @@ const POFilter = () => {
                               style={{ width: `${dayWidth}px` }}
                             >
                               {showBar && (
-                                <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="group absolute inset-0 flex items-center justify-center">
                                   <div
                                     className={`h-6 w-full rounded shadow text-white text-xs px-1 text-center flex items-center justify-center ${barColor}`}
                                   >
