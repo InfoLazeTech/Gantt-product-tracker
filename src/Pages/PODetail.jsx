@@ -168,15 +168,15 @@ export default function PODetail() {
       const updated = poDetails.find((po) => po._id === selectedPO._id);
       if (updated) {
         setSelectedPO(updated);
-         setProcesses(
-        updated.processes?.map((p) => ({
-          _id: p.processId?._id || p._id,
-          name: p.processId?.name || p.name,
-          startDateTime: p.startDateTime,
-          endDateTime: p.endDateTime,
-          status: p.status || p.processId?.status || "Not Started",
-        })) || []
-      );
+        setProcesses(
+          updated.processes?.map((p) => ({
+            _id: p.processId?._id || p._id,
+            name: p.processId?.name || p.name,
+            startDateTime: p.startDateTime,
+            endDateTime: p.endDateTime,
+            status: p.status || p.processId?.status || "Not Started",
+          })) || []
+        );
       }
     }
   }, [poDetails]);
@@ -395,45 +395,66 @@ export default function PODetail() {
             <FullPageLoader />
           </div>
         ) : (
-          <div className="bg-gray-50 mt-10 p-4 rounded border">
-            <h3 className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
+      
+          <div className="bg-gray-50 mt-10 p-5 rounded border">
+            <h3 className="text-lg font-bold text-gray-600 mb-6 text-start">
               All Production Orders
             </h3>
 
-            {/* Scrollable area with max 4 items */}
-            <div
-              className="space-y-2 overflow-y-auto"
-              style={{ maxHeight: "9rem" }}
-            >
-              {filteredPOs.map((po) => (
-                <div
-                  key={po._id}
-                  onClick={() => setSelectedPO(po)}
-                  className="p-2 border rounded bg-white text-xs flex items-center justify-between cursor-pointer"
-                >
-                  <div onClick={() => setSelectedPO(po)}>
-                    <strong className="text-blue-600">{po.PONumber}</strong> -{" "}
-                    {po.customerName}
-                  </div>
-                  <div className="flex items-center space-x-2 text-gray-600">
-                    <button
-                      className="rounded-full p-1 bg-sky-100 hover:bg-sky-200 transition-colors mr-1"
-                      onClick={() => handleEditOrUpdate(po)}
+            <div className="overflow-y-auto custom-scrollbar border border-gray-200 rounded-md min-h-[14rem] max-h-[14rem]">
+              {filteredPOs.length === 0 ? (
+                <p className="text-gray-500 text-center">
+                  No production orders found.
+                </p>
+              ) : (
+                <ul className="space-y-3 px-1 py-2">
+                  {filteredPOs.map((po) => (
+                    <li
+                      key={po._id}
+                      className={`py-5 px-4 flex items-center justify-between gap-4 rounded-md
+              cursor-pointer transition-all duration-200 ease-in-out
+              ${
+                selectedPO?._id === po._id
+                  ? "bg-blue-50 border-l-4 border-blue-600 shadow-sm"
+                  : "hover:border-l-4 hover:border-blue-400 hover:shadow-md hover:bg-white"
+              }`}
+                      onClick={() => setSelectedPO(po)}
                     >
-                      <FaEdit className="text-sky-600" size={14} />
-                    </button>
-                    <button
-                      className="rounded-full p-1 bg-red-100 hover:bg-red-200 transition-colors"
-                      onClick={() => {
-                        setSelectedPOId(po.itemId); // or po._id depending on your data
-                        setShowDeleteConfirm(true);
-                      }}
-                    >
-                      <FaTrash className="text-red-500" size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                      <div className="flex-grow">
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <p className="text-base font-semibold text-blue-600">
+                            {po.PONumber}
+                          </p>
+                          <p className="text-sm text-gray-700">
+                            {po.customerName}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2 text-gray-600">
+                        <button
+                          className="rounded-full p-1 bg-sky-100 hover:bg-sky-200 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditOrUpdate(po);
+                          }}
+                        >
+                          <FaEdit className="text-sky-600" size={14} />
+                        </button>
+                        <button
+                          className="rounded-full p-1 bg-red-100 hover:bg-red-200 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPOId(po.itemId);
+                            setShowDeleteConfirm(true);
+                          }}
+                        >
+                          <FaTrash className="text-red-500" size={14} />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         )}
@@ -615,14 +636,16 @@ export default function PODetail() {
         <div className="bg-white p-2 sm:p-4 rounded-md shadow-md border">
           <h2 className="text-xl sm:text-2xl font-bold mt-6 mb-2 flex items-center gap-2 ">
             <FiPackage className="w-5 h-5 text-blue-600" />
-            Production Order: {selectedPO.PONumber}
+            Production Order:{" "}
+            <span className="text-blue-600">{selectedPO.PONumber}</span>
           </h2>
 
           <div className="flex flex-wrap justify-between w-full text-sm text-gray-600 mb-4">
             <div className="flex items-center gap-2">
               <FaUser />
               <span>
-                <strong>Customer:</strong> {selectedPO.customerName}
+                <strong>Customer:</strong>{" "}
+                <span className="text-blue-600">{selectedPO.customerName}</span>
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -637,8 +660,10 @@ export default function PODetail() {
               {safeFormat(selectedPO.estimatedEndDate, "dd MMM yyyy")}
             </div>
             <div className="flex items-center gap-2">
-              <strong>Refernce Number:</strong> 
-               <span className="text-gray-700">{selectedPO?.RefNumber || "N/A"}</span>
+              <strong>Refernce Number:</strong>
+              <span className="text-blue-600">
+                {selectedPO?.RefNumber || "N/A"}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <LuFactory />
@@ -679,7 +704,7 @@ export default function PODetail() {
                         }`}
                         style={{ minWidth: `40px`, maxWidth: `60px` }}
                       >
-                        {format(date, "dd MMM")}
+                        {safeFormat(date, "dd MMM")}
                       </th>
                     );
                   })}
@@ -694,6 +719,11 @@ export default function PODetail() {
                   )
                   .map((p) => {
                     const process = p.processId;
+                    if (isEdit && editTask?._id === p._id) {
+                      console.log("Hiding graph for:", p._id);
+                      return null;
+                    }
+
                     const start = new Date(p.startDateTime);
                     const end = new Date(p.endDateTime);
                     const startIndex = allChartDates.findIndex((date) =>
@@ -702,8 +732,9 @@ export default function PODetail() {
                     const endIndex = allChartDates.findIndex((date) =>
                       isSameDay(end, date)
                     );
+
                     const today = new Date();
-                    today.setHours(0, 0, 0, 0); // normalize today
+                    today.setHours(0, 0, 0, 0);
 
                     const startDate = new Date(start);
                     startDate.setHours(0, 0, 0, 0);
@@ -719,7 +750,7 @@ export default function PODetail() {
                       isSameDay(today, endDate) ||
                       (startDate < today && endDate > today)
                     ) {
-                      // 🟡 Today is inside process range
+                      //  Today is inside process range
                       barColor = "bg-yellow-300";
                       status = "In Progress";
                     } else if (endDate < today) {
@@ -734,10 +765,16 @@ export default function PODetail() {
                           className="sticky left-0 bg-white border-r px-1 z-10 text-xs font-medium whitespace-nowrap group cursor-pointer hover:bg-blue-50 transition"
                           onClick={() => {
                             const startDate = p.startDateTime
-                              ? format(new Date(p.startDateTime), "yyyy-MM-dd")
+                              ? safeFormat(
+                                  new Date(p.startDateTime),
+                                  "yyyy-MM-dd"
+                                )
                               : "";
                             const endDate = p.endDateTime
-                              ? format(new Date(p.endDateTime), "yyyy-MM-dd")
+                              ? safeFormat(
+                                  new Date(p.endDateTime),
+                                  "yyyy-MM-dd"
+                                )
                               : "";
 
                             setEditTask({
@@ -822,8 +859,8 @@ export default function PODetail() {
                 <label className="block text-xs mb-1">Start Date</label>
                 <input
                   type="date"
-                  value={editTask.start}
-                  min={format(new Date(selectedPO.startDate), "yyyy-MM-dd")}
+                  value={safeFormat(new Date(editTask.start), "yyyy-MM-dd")}
+                  // min={safeFormat(new Date(selectedPO.startDate), "yyyy-MM-dd")}
                   onChange={(e) => updateTask("start", e.target.value)}
                   className="border p-2 rounded w-full mb-1"
                 />

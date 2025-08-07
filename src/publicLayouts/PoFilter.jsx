@@ -188,7 +188,9 @@ const POFilter = () => {
       {/* Header */}
       <div className="bg-white shadow-md px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <img src={timelineLogo} alt="Logo" className="w-8 h-8" />
+          <div className="bg-gradient-to-br from-sky-200 to-blue-200 rounded-full p-2 flex items-center justify-center shadow-md">
+            <img src={timelineLogo} alt="Logo" className="w-8 h-8" />
+          </div>
           <h1 className="text-xl font-bold text-blue-700">
             Production Order Timeline
           </h1>
@@ -286,10 +288,12 @@ const POFilter = () => {
           </div>
         </div>
       </div>
-      <div className="mt-40">
+      <div className="min-h-screen">
         {loading ? (
           <div className="flex justify-center items-center min-h-screen">
-            <FullPageLoader />
+            <div className="rounded-2xl p-6 w-full max-w-4xl flex items-center justify-center h-48">
+              <FullPageLoader />
+            </div>
           </div>
         ) : filteredPOs.length > 0 ? (
           <div className="mt-20 px-4 mb-16">
@@ -314,7 +318,7 @@ const POFilter = () => {
                       <th className="px-5 py-3 font-semibold">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 bg-white" >
+                  <tbody className="divide-y divide-gray-100 bg-white">
                     {filteredPOs.map((po) => {
                       const recipeName = po.recipe?.name || "-";
                       console.log("recipeId:", recipeName);
@@ -349,7 +353,7 @@ const POFilter = () => {
                           <tr
                             key={processObj._id}
                             className=" transition duration-150"
-                            >
+                          >
                             {/* Only first row shows PO info */}
                             {index === 0 ? (
                               <>
@@ -443,16 +447,21 @@ const POFilter = () => {
             {!isPendingPO && (
               <div className="p-4 text-sm">
                 {/* Header */}
-                <div className="bg-gray-100 p-2 sm:p-4 rounded-md shadow-md border">
+                <div className="bg-gray-100 p-2 rounded-md shadow-md border">
                   <h2 className="text-xl sm:text-2xl font-bold mt-6 mb-2 flex items-center gap-2 ">
                     <FiPackage className="w-5 h-5 text-blue-600" />
                     Production Order:
                     <span className="text-blue-500"> {po.PONumber}</span>
                   </h2>
                   <div className="flex flex-wrap justify-between w-full text-sm text-gray-600 mb-4">
-                    <div className="flex items-center gap-2 text-blue-700 font-bold text-lg">
+                    <div className="flex items-center gap-2 font-bold text-lg">
                       <FaUser className="text-blue-500" />
-                      <span>Customer: {po.customerName || "-"}</span>
+                      <span>
+                        Customer:{" "}
+                        <span className="text-blue-700">
+                          {po.customerName || "-"}
+                        </span>
+                      </span>
                     </div>
                     <div className="flex items-center gap-6 text-gray-600">
                       <div className="flex items-center gap-2">
@@ -482,7 +491,7 @@ const POFilter = () => {
                       minWidth: `${200 + allDays.length * dayWidth}px`, // ensure full-width or more
                     }}
                   >
-                    <div className="sticky left-0 z-20 bg-gray-100 border-r px-4 py-2 flex items-center justify-start">
+                    <div className="sticky left-0 z-20 bg-gray-100 border-r px-4 py-2 flex items-center justify-center h-12">
                       Task Name
                     </div>
                     <div
@@ -606,8 +615,16 @@ const POFilter = () => {
             )}
           </div>
         ) : (
-          <div className="text-center text-gray-500 mt-20">
-            No Production Orders Found
+          <div className="text-center mt-24">
+            <div className="inline-block p-6 bg-yellow-50 border border-yellow-200 rounded-lg shadow-md">
+              <div className="text-4xl mb-2 text-yellow-500">📦</div>
+              <h2 className="text-lg font-semibold text-yellow-700 mb-1">
+                No Production Orders Found
+              </h2>
+              <p className="text-sm text-gray-600">
+                Please adjust your search criteria or try again later.
+              </p>
+            </div>
           </div>
         )}
       </div>

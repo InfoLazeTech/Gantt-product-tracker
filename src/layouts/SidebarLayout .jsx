@@ -60,7 +60,7 @@ const SidebarLayout = () => {
             <img src={logo} alt="logo" className="w-8 h-8" />
           </div>
           <h1 className="text-lg sm:text-2xl font-extrabold text-slate-800 tracking-tight drop-shadow-sm">
-            TimeLine-Chart
+            Production Order Timeline
           </h1>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
