@@ -22,7 +22,7 @@ import { fetchCustomerProduct } from "../redux/features/productSlice";
 import { toast } from "react-toastify";
 import { FiPackage } from "react-icons/fi";
 import FullPageLoader from "../components/Loader/Loader";
-
+import { useNavigate } from "react-router-dom";
 const POFilter = () => {
   const [poNumber, setPONumber] = useState("");
   const [referenceNumber, setReferenceNumber] = useState("");
@@ -30,7 +30,7 @@ const POFilter = () => {
   const [dayWidth, setDayWidth] = useState(85);
   const dispatch = useDispatch();
   const { token } = useSelector((state) => state.auth);
-
+  const navigate =useNavigate()
   const { checkProduct, loading } = useSelector((state) => state.product);
   console.log("checkProduct", checkProduct);
 
@@ -125,7 +125,7 @@ const POFilter = () => {
   const handleLogout = () => {
     dispatch(logout());
     localStorage.removeItem("token");
-    window.location.href = "/login";
+    navigate("/login");
   };
 
   const po = filteredPOs[0];
@@ -197,9 +197,7 @@ const POFilter = () => {
         </div>
         <button
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
-          onClick={
-            token ? handleLogout : () => (window.location.href = "/login")
-          }
+            onClick={token ? handleLogout : () => navigate("/login")}
         >
           <FaUser />
           {token ? "Logout" : "Login"}

@@ -67,7 +67,7 @@ const SidebarLayout = () => {
           <div className="flex items-center gap-1 sm:gap-2">
             <FaUserCircle size={24} className="text-slate-400" />
             <span className="text-slate-700 font-medium text-xs sm:text-sm">
-             Wlcome, {user?.name || "User"}
+             Welcome, {user?.name || "User"}
             </span>
           </div>
           {isLoggedIn ? (

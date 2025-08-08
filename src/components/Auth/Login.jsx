@@ -48,37 +48,35 @@ const Login = () => {
 
   return (
     <>
-   <div
-  className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center px-4 py-8 relative"
-  style={{
-    backgroundImage: "linear-gradient(to bottom right, #c2e9fb, #a1c4fd)",
-  }}
->
-  {/* Overlay */}
-  <div className="absolute inset-0 bg-black bg-opacity-30 backdrop-blur-sm z-0" />
+      <div
+        className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center px-4 py-8 relative"
+        style={{
+          backgroundImage: "linear-gradient(to bottom right, #c2e9fb, #a1c4fd)",
+        }}
+      >
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-black bg-opacity-30 backdrop-blur-sm z-0" />
 
-  {/* Animated SVG */}
-  <svg
-    className="absolute top-0 left-0 w-full h-full z-0 opacity-10"
-    viewBox="0 0 800 500"
-    xmlns="http://www.w3.org/2000/svg"
-    preserveAspectRatio="none"
-  >
-    <path fill="#ffffff">
-      <animate
-        attributeName="d"
-        dur="15s"
-        repeatCount="indefinite"
-        values="
+        {/* Animated SVG */}
+        <svg
+          className="absolute top-0 left-0 w-full h-full z-0 opacity-10"
+          viewBox="0 0 800 500"
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="none"
+        >
+          <path fill="#ffffff">
+            <animate
+              attributeName="d"
+              dur="15s"
+              repeatCount="indefinite"
+              values="
           M0,100 C150,200 350,0 500,100 C650,200 850,0 1000,100 L1000,500 L0,500 Z;
           M0,200 C200,100 300,300 500,200 C700,100 800,300 1000,200 L1000,500 L0,500 Z;
           M0,100 C150,200 350,0 500,100 C650,200 850,0 1000,100 L1000,500 L0,500 Z
         "
-      />
-    </path>
-  </svg>
-
-
+            />
+          </path>
+        </svg>
 
         {/* Login Card */}
         <div className="relative z-10 p-8 bg-white backdrop-blur-lg rounded-xl shadow-lg max-w-md w-full">
@@ -104,6 +102,22 @@ const Login = () => {
             />
           </div>
 
+          {/* <div className="mb-6 relative">
+            <label className="block mb-1 text-gray-700">Password</label>
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              placeholder="Enter your password"
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full border border-gray-300 px-4 py-2 rounded pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <span
+              className="absolute top-10 right-3 text-gray-500 cursor-pointer"
+              onClick={() => setShowPassword((prev) => !prev)}
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </span>
+          </div> */}
           <div className="mb-6 relative">
             <label className="block mb-1 text-gray-700">Password</label>
             <input
@@ -114,7 +128,7 @@ const Login = () => {
               className="w-full border border-gray-300 px-4 py-2 rounded pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <span
-              className="absolute top-11 right-3 text-gray-500 cursor-pointer"
+              className="absolute top-8 right-3  text-gray-500 cursor-pointer rounded hover:bg-gray-200 transition p-2"
               onClick={() => setShowPassword((prev) => !prev)}
             >
               {showPassword ? <FaEyeSlash /> : <FaEye />}
